@@ -1,5 +1,5 @@
 center_x 0
 center_y 0
-half_length 5
-num_pixels 1000
-t_ncc 0.018
+half_length 20
+num_pixels 2000
+t_ncc 0.029
