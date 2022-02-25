@@ -164,7 +164,7 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 		}
 		else
 		{
-			std::cerr << "Error. Binary star file does not contain valid single or double precision stars.\n";
+			std::cerr << "Error. Binary file does not contain valid single or double precision numbers.\n";
 			return false;
 		}
 
@@ -269,7 +269,7 @@ bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 	}
 	else
 	{
-		std::cerr << "Error. File " << fname << " is not a .bin file.\n";
+		std::cerr << "Error. File " << fname << " is not a .bin or .txt file.\n";
 		return false;
 	}
 

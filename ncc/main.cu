@@ -92,7 +92,7 @@ CUDA error checking
 
 \return bool -- true for error, false for no error
 *********************************************************************/
-bool CUDAError(const char* name, bool sync, const char* file, const int line);
+bool cuda_error(const char* name, bool sync, const char* file, const int line);
 
 /**********************************************************
 END structure definitions and function forward declarations
@@ -103,7 +103,7 @@ END structure definitions and function forward declarations
 int main(int argc, char* argv[])
 {
 	/*if help option has been input, display usage message*/
-	if (cmdOptionExists(argv, argv + argc, std::string("-h")) || cmdOptionExists(argv, argv + argc, std::string("--help")))
+	if (cmd_option_exists(argv, argv + argc, std::string("-h")) || cmd_option_exists(argv, argv + argc, std::string("--help")))
 	{
 		display_usage(argv[0]);
 		return -1;
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 	start at 1, since first array element, argv[0], is program name*/
 	for (int i = 1; i < argc; i += 2)
 	{
-		if (!cmdOptionValid(OPTS, OPTS + OPTS_SIZE, argv[i]))
+		if (!cmd_option_valid(OPTS, OPTS + OPTS_SIZE, argv[i]))
 		{
 			std::cerr << "Error. Invalid input syntax.\n";
 			display_usage(argv[0]);
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 
 	for (int i = 1; i < argc; i += 2)
 	{
-		cmdinput = cmdOptionValue(argv, argv + argc, std::string(argv[i]));
+		cmdinput = cmd_option_value(argv, argv + argc, std::string(argv[i]));
 
 		if (argv[i] == std::string("-ip") || argv[i] == std::string("--infile_prefix"))
 		{
@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-cx") || argv[i] == std::string("--center_x"))
 		{
-			if (validDouble(cmdinput))
+			if (valid_double(cmdinput))
 			{
 				cx = strtod(cmdinput, nullptr);
 			}
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-cy") || argv[i] == std::string("--center_y"))
 		{
-			if (validDouble(cmdinput))
+			if (valid_double(cmdinput))
 			{
 				cy = strtod(cmdinput, nullptr);
 			}
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
 		{
-			if (validDouble(cmdinput))
+			if (valid_double(cmdinput))
 			{
 				half_length = strtod(cmdinput, nullptr);
 				if (half_length < std::numeric_limits<double>::min())
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-px") || argv[i] == std::string("--pixels"))
 		{
-			if (validDouble(cmdinput))
+			if (valid_double(cmdinput))
 			{
 				num_pixels = static_cast<int>(strtod(cmdinput, nullptr));
 				if (num_pixels < 1)
@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-wm") || argv[i] == std::string("--write_map"))
 		{
-			if (validDouble(cmdinput))
+			if (valid_double(cmdinput))
 			{
 				write_map = static_cast<int>(std::strtod(cmdinput, nullptr));
 				if (write_map != 0 && write_map != 1)
@@ -252,7 +252,7 @@ int main(int argc, char* argv[])
 
 	/*check that a CUDA capable device is present*/
 	cudaSetDevice(0);
-	if (CUDAError("cudaSetDevice(0)", false, __FILE__, __LINE__)) return -1;
+	if (cuda_error("cudaSetDevice", false, __FILE__, __LINE__)) return -1;
 
 
 	/*read in parameter info and store necessary values*/
@@ -292,16 +292,16 @@ int main(int argc, char* argv[])
 	int* num_crossings = nullptr;
 
 	cudaMallocManaged(&xpos, num_rows * num_cols * sizeof(double));
-	if (CUDAError("cudaMallocManaged(*xpos)", false, __FILE__, __LINE__)) return -1;
+	if (cuda_error("cudaMallocManaged(*xpos)", false, __FILE__, __LINE__)) return -1;
 
 	cudaMallocManaged(&ypos, num_rows* num_cols * sizeof(double));
-	if (CUDAError("cudaMallocManaged(*ypos)", false, __FILE__, __LINE__)) return -1;
+	if (cuda_error("cudaMallocManaged(*ypos)", false, __FILE__, __LINE__)) return -1;
 
 	cudaMallocManaged(&caustics, num_rows* num_cols * sizeof(Complex<double>));
-	if (CUDAError("cudaMallocManaged(*caustics)", false, __FILE__, __LINE__)) return -1;
+	if (cuda_error("cudaMallocManaged(*caustics)", false, __FILE__, __LINE__)) return -1;
 
 	cudaMallocManaged(&num_crossings, num_pixels * num_pixels * sizeof(int));
-	if (CUDAError("cudaMallocManaged(*num_crossings)", false, __FILE__, __LINE__)) return -1;
+	if (cuda_error("cudaMallocManaged(*num_crossings)", false, __FILE__, __LINE__)) return -1;
 
 	/********************
 	END memory allocation
@@ -343,8 +343,7 @@ int main(int argc, char* argv[])
 
 		std::cout << "Done reading caustic y positions from file " << infile_prefix + caustics_file + "_x" + infile_type << "\n";
 
-		/*copy values into caustic array
-		offset based on the center of the desired region*/
+		/*copy values into caustic array*/
 		for (int i = 0; i < num_rows; i++)
 		{
 			for (int j = 0; j < num_cols; j++)
@@ -373,20 +372,23 @@ int main(int argc, char* argv[])
 
 	/*number of threads per block, and number of blocks per grid
 	uses empirical values for maximum number of threads and blocks*/
-	int numThreads_x = 16;
-	int numThreads_y = 16;
-	int numBlocks_x = (num_rows - 1) / numThreads_x + 1;
-	if (numBlocks_x > 32768 || numBlocks_x < 1)
+
+	int num_threads_y = 16;
+	int num_threads_x = 16;
+
+	int num_blocks_y = static_cast<int>((num_cols - 1) / num_threads_y) + 1;
+	if (num_blocks_y > 32768 || num_blocks_y < 1)
 	{
-		numBlocks_x = 32768;
+		num_blocks_y = 32768;
 	}
-	int numBlocks_y = (num_cols - 1) / numThreads_y + 1;
-	if (numBlocks_y > 32768 || numBlocks_y < 1)
+
+	int num_blocks_x = static_cast<int>((num_rows - 1) / num_threads_x) + 1;
+	if (num_blocks_x > 32768 || num_blocks_x < 1)
 	{
-		numBlocks_y = 32768;
+		num_blocks_x = 32768;
 	}
-	dim3 blocks(numBlocks_x, numBlocks_y);
-	dim3 threads(numThreads_x, numThreads_y);
+	dim3 blocks(num_blocks_x, num_blocks_y);
+	dim3 threads(num_threads_x, num_threads_y);
 
 
 	/*start and end time for timing purposes*/
@@ -396,8 +398,8 @@ int main(int argc, char* argv[])
 	std::cout << "\nCalculating number of caustic crossings...\n";
 	/*get current time at start of loop*/
 	starttime = std::chrono::high_resolution_clock::now();
-	find_num_caustic_crossings_kernel << <blocks, threads >> > (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
-	if (CUDAError("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
+	find_num_caustic_crossings_kernel<double> <<<blocks, threads >>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
+	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
 	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();
 	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
@@ -480,7 +482,7 @@ int main(int argc, char* argv[])
 	std::cout << "\nDone.\n";
 
 	cudaDeviceReset();
-	if (CUDAError("cudaDeviceReset", false, __FILE__, __LINE__)) return -1;
+	if (cuda_error("cudaDeviceReset", false, __FILE__, __LINE__)) return -1;
 
 	return 0;
 }
@@ -523,7 +525,11 @@ void display_usage(char* name)
 		<< "                         Filenames are:\n"
 		<< "                            ncc_parameter_info      contains various parameter\n"
 		<< "                                                    values used in calculations\n"
-		<< "                            ncc_ncc_numpixels\n"
+		<< "                            ncc_ncc_numpixels       histogram that gives the\n"
+		<< "                                                    number of caustic crossings\n"
+		<< "                                                    and the number of pixels\n"
+		<< "                                                    with that number of\n"
+		<< "                                                    crossings\n"
 		<< "                            num_caustic_crossings   each of the num_pixels\n"
 		<< "                                                    lines contains num_pixels\n"
 		<< "                                                    values equal to the number\n"
@@ -548,7 +554,7 @@ void print_progress(int icurr, int imax, int num_bars)
 	std::cout << "] " << icurr * 100 / imax << " %";
 }
 
-bool CUDAError(const char* name, bool sync, const char* file, const int line)
+bool cuda_error(const char* name, bool sync, const char* file, const int line)
 {
 	cudaError_t err = cudaGetLastError();
 	/*if the last error message is not a success, print the error code and msg
