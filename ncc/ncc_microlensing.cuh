@@ -73,7 +73,7 @@ handles vertical lines by returning the y position of the first point
 \param p1 -- second point
 \param x -- x position
 
-\return x position of connecting line at y position
+\return y position of connecting line at x position
 *****************************************************************************/
 template <typename T>
 __device__ T get_line_y_position(Complex<T> p0, Complex<T> p1, T x)
@@ -161,13 +161,12 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 
 	for (int i = x_index; i < nrows; i += x_stride)
 	{
+		/*only able to calculate a caustic crossing if a caustic
+		point has a succeeding point to form a line segment with
+		(i.e., we are not at the end of the 2*pi phase chain that
+		was traced out), hence ncols - 1*/
 		for (int j = y_index; j < ncols - 1; j += y_stride)
 		{
-			/*only able to calculate a caustic crossing if
-			a caustic point has a succeeding point
-			to form a line segment with (i.e., we are not
-			at the end of the 2*pi phase chain that was traced out)*/
-
 			/*initial and final point of the line segment
 			we will be calculating what pixels this line segment crosses*/
 			Complex<T> pt0 = caustics[i * ncols + j];
@@ -179,8 +178,6 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			{
 				pt0 = corrected_point(pt0, pt1, hl, npixels);
 				pt1 = corrected_point(pt1, pt0, hl, npixels);
-				pt0 = corrected_point(pt0, pt1, hl, npixels);
-				pt1 = corrected_point(pt1, pt0, hl, npixels);
 			}
 			/*else if both points are outside the region,
 			but intersect the region boundaries (i.e., really long caustic segments),
@@ -189,8 +186,6 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 				|| get_line_x_position(pt0, pt1, -hl) >= -hl
 				|| fabs(get_line_y_position(pt0, pt1, -hl)) <= hl)
 			{
-				pt0 = corrected_point(pt0, pt1, hl, npixels);
-				pt1 = corrected_point(pt1, pt0, hl, npixels);
 				pt0 = corrected_point(pt0, pt1, hl, npixels);
 				pt1 = corrected_point(pt1, pt0, hl, npixels);
 			}
