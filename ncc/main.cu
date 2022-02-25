@@ -52,7 +52,7 @@ std::string outfile_type = ".bin";
 
 /*default variable values*/
 const std::string caustics_parameter_file = "ccf_parameter_info.txt";
-const std::string caustics_file = "ccf_caustics_pos";
+const std::string caustics_file = "ccf_caustics";
 
 int num_rows = 0;
 int num_cols = 0;
@@ -471,12 +471,12 @@ int main(int argc, char* argv[])
 	{
 		/*write number of caustic crossings*/
 		std::cout << "\nWriting number of caustic crossings...\n";
-		if (!write_array<int>(num_crossings, num_pixels, num_pixels, outfile_prefix + "num_caustic_crossings" + outfile_type))
+		if (!write_array<int>(num_crossings, num_pixels, num_pixels, outfile_prefix + "ncc_ncc" + outfile_type))
 		{
-			std::cerr << "Error. Unable to write number of caustic crossings to file " << outfile_prefix << "num_caustic_crossings" + outfile_type << "\n";
+			std::cerr << "Error. Unable to write number of caustic crossings to file " << outfile_prefix << "ncc_ncc" + outfile_type << "\n";
 			return -1;
 		}
-		std::cout << "Done writing number of caustic crossings to file " << outfile_prefix << "num_caustic_crossings" + outfile_type << "\n";
+		std::cout << "Done writing number of caustic crossings to file " << outfile_prefix << "ncc_ncc" + outfile_type << "\n";
 	}
 
 	std::cout << "\nDone.\n";
@@ -523,18 +523,20 @@ void display_usage(char* name)
 		<< "                         Default value: " << outfile_prefix << "\n"
 		<< "                         Lines of output files are whitespace delimited.\n"
 		<< "                         Filenames are:\n"
-		<< "                            ncc_parameter_info      contains various parameter\n"
-		<< "                                                    values used in calculations\n"
-		<< "                            ncc_ncc_numpixels       histogram that gives the\n"
+		<< "                            ncc_parameter_info   various parameter values used\n"
+		<< "                                                    in calculations\n"
+		<< "                            ncc_ncc_numpixels    histogram that gives the\n"
 		<< "                                                    number of caustic crossings\n"
 		<< "                                                    and the number of pixels\n"
 		<< "                                                    with that number of\n"
 		<< "                                                    crossings\n"
-		<< "                            num_caustic_crossings   each of the num_pixels\n"
-		<< "                                                    lines contains num_pixels\n"
-		<< "                                                    values equal to the number\n"
-		<< "                                                    of caustic crossings at the\n"
-		<< "                                                    center of the pixel\n";
+		<< "                            ncc_ncc              the first item is num_pixels\n"
+		<< "                                                    and the second item is\n"
+		<< "                                                    num_pixels, followed by\n"
+		<< "                                                    binary integer values of\n"
+		<< "                                                    the number of caustic\n"
+		<< "                                                    crossings at the center of\n"
+		<< "                                                    each pixel\n";
 }
 
 void print_progress(int icurr, int imax, int num_bars)
