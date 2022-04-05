@@ -525,18 +525,15 @@ void display_usage(char* name)
 		<< "                         Filenames are:\n"
 		<< "                            ncc_parameter_info   various parameter values used\n"
 		<< "                                                    in calculations\n"
-		<< "                            ncc_ncc_numpixels    histogram that gives the\n"
-		<< "                                                    number of caustic crossings\n"
-		<< "                                                    and the number of pixels\n"
-		<< "                                                    with that number of\n"
-		<< "                                                    crossings\n"
+		<< "                            ncc_ncc_numpixels    each line contains a number of\n"
+		<< "                                                    caustic crossings and the\n"
+		<< "                                                    number of pixels with that\n"
+		<< "                                                    many caustic crossings\n"
 		<< "                            ncc_ncc              the first item is num_pixels\n"
 		<< "                                                    and the second item is\n"
-		<< "                                                    num_pixels, followed by\n"
-		<< "                                                    binary integer values of\n"
-		<< "                                                    the number of caustic\n"
-		<< "                                                    crossings at the center of\n"
-		<< "                                                    each pixel\n";
+		<< "                                                    num_pixels followed by the\n"
+		<< "                                                    number of caustic crossings\n"
+		<< "                                                    at the center of each pixel\n";
 }
 
 void print_progress(int icurr, int imax, int num_bars)
