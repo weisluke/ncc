@@ -500,7 +500,7 @@ void display_usage(char* name)
 		std::cout << "Usage: programname opt1 val1 opt2 val2 opt3 val3 ...\n";
 	}
 	std::cout << "Options:\n"
-		<< "   -h,--help           Show this help message\n"
+		<< "   -h,--help             Show this help message\n"
 		<< "   -ip,--infile_prefix   Specify the prefix to be used when reading in files.\n"
 		<< "                         Default value: " << infile_prefix << "\n"
 		<< "   -it,--infile_type     Specify the type of input file to be used when reading\n"
