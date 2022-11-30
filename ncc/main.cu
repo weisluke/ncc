@@ -6,19 +6,18 @@ Email: weisluke@alum.mit.edu
 *****************************************************************/
 
 
-#include "complex.cuh"
-#include "ncc_microlensing.cuh"
-#include "ncc_read_write_files.cuh"
-#include "parse.hpp"
-
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
 #include <chrono>
 #include <limits>
 #include <new>
 #include <string>
+
+#include "complex.cuh"
+#include "ncc_microlensing.cuh"
+#include "ncc_read_write_files.cuh"
+#include "util.hpp"
 
 
 
@@ -59,28 +58,57 @@ int num_cols = 0;
 
 
 
-/************************************************************
-BEGIN structure definitions and function forward declarations
-************************************************************/
-
-
 /************************************
 Print the program usage help message
 
 \param name -- name of the executable
 ************************************/
-void display_usage(char* name);
-
-/****************************************************
-function to print out progress bar of loops
-examples: [====    ] 50%       [=====  ] 62%
-
-\param icurr -- current position in the loop
-\param imax -- maximum position in the loop
-\param num_bars -- number of = symbols inside the bar
-				   default value: 50
-****************************************************/
-void print_progress(int icurr, int imax, int num_bars = 50);
+void display_usage(char* name)
+{
+	if (name)
+	{
+		std::cout << "Usage: " << name << " opt1 val1 opt2 val2 opt3 val3 ...\n";
+	}
+	else
+	{
+		std::cout << "Usage: programname opt1 val1 opt2 val2 opt3 val3 ...\n";
+	}
+	std::cout << "Options:\n"
+		<< "   -h,--help             Show this help message\n"
+		<< "   -ip,--infile_prefix   Specify the prefix to be used when reading in files.\n"
+		<< "                         Default value: " << infile_prefix << "\n"
+		<< "   -it,--infile_type     Specify the type of input file to be used when reading\n"
+		<< "                         in files. Default value: " << infile_type << "\n"
+		<< "   -cx,--center_x        Specify the x coordinate of the center of the square\n"
+		<< "                         region to find the number of caustic crossings in.\n"
+		<< "                         Default value: " << cx << "\n"
+		<< "   -cy,--center_y        Specify the y coordinate of the center of the square\n"
+		<< "                         region to find the number of caustic crossings in.\n"
+		<< "                         Default value: " << cy << "\n"
+		<< "   -hl,--half_length     Specify the half-length of the square region to find\n"
+		<< "                         the number of caustic-crossings in. Default value: " << half_length << "\n"
+		<< "   -px,--pixels          Specify the number of pixels per side length.\n"
+		<< "                         Default value: " << num_pixels << "\n"
+		<< "   -wp,--write_map       Specify whether to write number of caustic crossings\n"
+		<< "                         map. Default value: " << write_map << "\n"
+		<< "   -ot,--outfile_type    Specify the type of file to be output. Valid options\n"
+		<< "                         are binary (.bin) or text (.txt). Default value: " << outfile_type << "\n"
+		<< "   -o,--outfile          Specify the prefix to be used in output file names.\n"
+		<< "                         Default value: " << outfile_prefix << "\n"
+		<< "                         Lines of output files are whitespace delimited.\n"
+		<< "                         Filenames are:\n"
+		<< "                            ncc_parameter_info   various parameter values used\n"
+		<< "                                                    in calculations\n"
+		<< "                            ncc_ncc_numpixels    each line contains a number of\n"
+		<< "                                                    caustic crossings and the\n"
+		<< "                                                    number of pixels with that\n"
+		<< "                                                    many caustic crossings\n"
+		<< "                            ncc_ncc              the first item is num_pixels\n"
+		<< "                                                    and the second item is\n"
+		<< "                                                    num_pixels followed by the\n"
+		<< "                                                    number of caustic crossings\n"
+		<< "                                                    at the center of each pixel\n";
+}
 
 /*********************************************************************
 CUDA error checking
@@ -92,11 +120,33 @@ CUDA error checking
 
 \return bool -- true for error, false for no error
 *********************************************************************/
-bool cuda_error(const char* name, bool sync, const char* file, const int line);
-
-/**********************************************************
-END structure definitions and function forward declarations
-**********************************************************/
+bool cuda_error(const char* name, bool sync, const char* file, const int line)
+{
+	cudaError_t err = cudaGetLastError();
+	/*if the last error message is not a success, print the error code and msg
+	and return true (i.e., an error occurred)*/
+	if (err != cudaSuccess)
+	{
+		const char* errMsg = cudaGetErrorString(err);
+		std::cerr << "CUDA error check for " << name << " failed at " << file << ":" << line << "\n";
+		std::cerr << "Error code: " << err << " (" << errMsg << ")\n";
+		return true;
+	}
+	/*if a device synchronization is also to be done*/
+	if (sync)
+	{
+		/*perform the same error checking as initially*/
+		err = cudaDeviceSynchronize();
+		if (err != cudaSuccess)
+		{
+			const char* errMsg = cudaGetErrorString(err);
+			std::cerr << "CUDA error check for cudaDeviceSynchronize failed at " << file << ":" << line << "\n";
+			std::cerr << "Error code: " << err << " (" << errMsg << ")\n";
+			return true;
+		}
+	}
+	return false;
+}
 
 
 
@@ -157,11 +207,11 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-cx") || argv[i] == std::string("--center_x"))
 		{
-			if (valid_double(cmdinput))
+			try
 			{
-				cx = strtod(cmdinput, nullptr);
+				cx = std::stod(cmdinput);
 			}
-			else
+			catch (...)
 			{
 				std::cerr << "Error. Invalid center_x input.\n";
 				return -1;
@@ -169,11 +219,11 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-cy") || argv[i] == std::string("--center_y"))
 		{
-			if (valid_double(cmdinput))
+			try
 			{
-				cy = strtod(cmdinput, nullptr);
+				cy = std::stod(cmdinput);
 			}
-			else
+			catch (...)
 			{
 				std::cerr << "Error. Invalid center_y input.\n";
 				return -1;
@@ -181,16 +231,16 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
 		{
-			if (valid_double(cmdinput))
+			try
 			{
-				half_length = strtod(cmdinput, nullptr);
+				half_length = std::stod(cmdinput);
 				if (half_length < std::numeric_limits<double>::min())
 				{
 					std::cerr << "Error. Invalid half_length input. half_length must be > " << std::numeric_limits<double>::min() << "\n";
 					return -1;
 				}
 			}
-			else 
+			catch (...)
 			{
 				std::cerr << "Error. Invalid half_length input.\n";
 				return -1;
@@ -198,16 +248,16 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-px") || argv[i] == std::string("--pixels"))
 		{
-			if (valid_double(cmdinput))
+			try
 			{
-				num_pixels = static_cast<int>(strtod(cmdinput, nullptr));
+				num_pixels = std::stoi(cmdinput);
 				if (num_pixels < 1)
 				{
 					std::cerr << "Error. Invalid num_pixels input. num_pixels must be an integer > 0\n";
 					return -1;
 				}
 			}
-			else
+			catch (...)
 			{
 				std::cerr << "Error. Invalid num_pixels input.\n";
 				return -1;
@@ -215,16 +265,16 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-wm") || argv[i] == std::string("--write_map"))
 		{
-			if (valid_double(cmdinput))
+			try
 			{
-				write_map = static_cast<int>(std::strtod(cmdinput, nullptr));
+				write_map = std::stoi(cmdinput);
 				if (write_map != 0 && write_map != 1)
 				{
 					std::cerr << "Error. Invalid write_map input. write_map must be 0 (false) or 1 (true).\n";
 					return -1;
 				}
 			}
-			else
+			catch (...)
 			{
 				std::cerr << "Error. Invalid write_map input.\n";
 				return -1;
@@ -485,99 +535,5 @@ int main(int argc, char* argv[])
 	if (cuda_error("cudaDeviceReset", false, __FILE__, __LINE__)) return -1;
 
 	return 0;
-}
-
-
-
-void display_usage(char* name)
-{
-	if (name)
-	{
-		std::cout << "Usage: " << name << " opt1 val1 opt2 val2 opt3 val3 ...\n";
-	}
-	else
-	{
-		std::cout << "Usage: programname opt1 val1 opt2 val2 opt3 val3 ...\n";
-	}
-	std::cout << "Options:\n"
-		<< "   -h,--help             Show this help message\n"
-		<< "   -ip,--infile_prefix   Specify the prefix to be used when reading in files.\n"
-		<< "                         Default value: " << infile_prefix << "\n"
-		<< "   -it,--infile_type     Specify the type of input file to be used when reading\n"
-		<< "                         in files. Default value: " << infile_type << "\n"
-		<< "   -cx,--center_x        Specify the x coordinate of the center of the square\n"
-		<< "                         region to find the number of caustic crossings in.\n"
-		<< "                         Default value: " << cx << "\n"
-		<< "   -cy,--center_y        Specify the y coordinate of the center of the square\n"
-		<< "                         region to find the number of caustic crossings in.\n"
-		<< "                         Default value: " << cy << "\n"
-		<< "   -hl,--half_length     Specify the half-length of the square region to find\n"
-		<< "                         the number of caustic-crossings in. Default value: " << half_length << "\n"
-		<< "   -px,--pixels          Specify the number of pixels per side length.\n"
-		<< "                         Default value: " << num_pixels << "\n"
-		<< "   -wp,--write_map       Specify whether to write number of caustic crossings\n"
-		<< "                         map. Default value: " << write_map << "\n"
-		<< "   -ot,--outfile_type    Specify the type of file to be output. Valid options\n"
-		<< "                         are binary (.bin) or text (.txt). Default value: " << outfile_type << "\n"
-		<< "   -o,--outfile          Specify the prefix to be used in output file names.\n"
-		<< "                         Default value: " << outfile_prefix << "\n"
-		<< "                         Lines of output files are whitespace delimited.\n"
-		<< "                         Filenames are:\n"
-		<< "                            ncc_parameter_info   various parameter values used\n"
-		<< "                                                    in calculations\n"
-		<< "                            ncc_ncc_numpixels    each line contains a number of\n"
-		<< "                                                    caustic crossings and the\n"
-		<< "                                                    number of pixels with that\n"
-		<< "                                                    many caustic crossings\n"
-		<< "                            ncc_ncc              the first item is num_pixels\n"
-		<< "                                                    and the second item is\n"
-		<< "                                                    num_pixels followed by the\n"
-		<< "                                                    number of caustic crossings\n"
-		<< "                                                    at the center of each pixel\n";
-}
-
-void print_progress(int icurr, int imax, int num_bars)
-{
-	std::cout << "\r[";
-	for (int i = 0; i < num_bars; i++)
-	{
-		if (i <= icurr * num_bars / imax)
-		{
-			std::cout << "=";
-		}
-		else
-		{
-			std::cout << " ";
-		}
-	}
-	std::cout << "] " << icurr * 100 / imax << " %";
-}
-
-bool cuda_error(const char* name, bool sync, const char* file, const int line)
-{
-	cudaError_t err = cudaGetLastError();
-	/*if the last error message is not a success, print the error code and msg
-	and return true (i.e., an error occurred)*/
-	if (err != cudaSuccess)
-	{
-		const char* errMsg = cudaGetErrorString(err);
-		std::cerr << "CUDA error check for " << name << " failed at " << file << ":" << line << "\n";
-		std::cerr << "Error code: " << err << " (" << errMsg << ")\n";
-		return true;
-	}
-	/*if a device synchronization is also to be done*/
-	if (sync)
-	{
-		/*perform the same error checking as initially*/
-		err = cudaDeviceSynchronize();
-		if (err != cudaSuccess)
-		{
-			const char* errMsg = cudaGetErrorString(err);
-			std::cerr << "CUDA error check for cudaDeviceSynchronize failed at " << file << ":" << line << "\n";
-			std::cerr << "Error code: " << err << " (" << errMsg << ")\n";
-			return true;
-		}
-	}
-	return false;
 }
 

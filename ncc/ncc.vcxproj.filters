@@ -9,7 +9,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="parse.hpp">
+    <ClInclude Include="util.hpp">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -26,11 +26,6 @@
     <CudaCompile Include="complex.cuh">
       <Filter>include</Filter>
     </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="parse.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

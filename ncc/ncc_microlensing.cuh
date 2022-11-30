@@ -1,8 +1,9 @@
 ﻿#pragma once
 
+#include <cstdio>
+
 #include "complex.cuh"
 
-#include <cstdio>
 
 /***************************************
 return the sign of a number
@@ -16,7 +17,7 @@ __device__ T sgn(T val)
 {
 	if (val < -0) return -1;
 	if (val > 0) return 1;
-	return 0;
+	return val;
 }
 
 /*********************************************************
@@ -313,3 +314,4 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 		}
 	}
 }
+

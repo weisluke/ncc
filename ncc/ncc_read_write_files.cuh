@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "complex.cuh"
-
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -9,6 +7,8 @@
 #include <new>
 #include <string>
 #include <system_error>
+
+#include "complex.cuh"
 
 
 /***********************************************************
@@ -23,12 +23,14 @@ read nrows and ncols parameters from file
 template<typename T>
 bool read_params(int& nrows, int& ncols, const std::string& fname)
 {
+	std::filesystem::path fpath = fname;
+
 	nrows = 0;
 	ncols = 0;
 
 	std::ifstream infile;
 
-	if (fname.substr(fname.size() - 4) == ".txt")
+	if (fpath.extension() == ".txt")
 	{
 		infile.open(fname);
 
@@ -58,7 +60,7 @@ bool read_params(int& nrows, int& ncols, const std::string& fname)
 			return false;
 		}
 	}
-	else if (fname.substr(fname.size() - 4) == ".bin")
+	else if (fpath.extension() == ".bin")
 	{
 		infile.open(fname, std::ios_base::binary);
 
@@ -101,9 +103,11 @@ read array of complex values from disk into array
 template <typename T>
 bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::string& fname)
 {
+	std::filesystem::path fpath = fname;
+
 	std::ifstream infile;
 
-	if (fname.substr(fname.size() - 4) == ".bin")
+	if (fpath.extension() == ".bin")
 	{
 		std::error_code err;
 		std::uintmax_t fsize = std::filesystem::file_size(fname, err);
@@ -192,9 +196,11 @@ read array of real values from disk into array
 template <typename T>
 bool read_re_array(T* vals, int nrows, int ncols, const std::string& fname)
 {
+	std::filesystem::path fpath = fname;
+
 	std::ifstream infile;
 
-	if (fname.substr(fname.size() - 4) == ".txt")
+	if (fpath.extension() == ".txt")
 	{
 		infile.open(fname);
 
@@ -231,9 +237,11 @@ write array of values to disk
 template <typename T>
 bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 {
+	std::filesystem::path fpath = fname;
+
 	std::ofstream outfile;
 
-	if (fname.substr(fname.size() - 4) == ".txt")
+	if (fpath.extension() == ".txt")
 	{
 		outfile.precision(9);
 		outfile.open(fname);
@@ -252,7 +260,7 @@ bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 			outfile << "\n";
 		}
 	}
-	else if (fname.substr(fname.size() - 4) == ".bin")
+	else if (fpath.extension() == ".bin")
 	{
 		outfile.open(fname, std::ios_base::binary);
 
