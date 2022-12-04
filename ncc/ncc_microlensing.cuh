@@ -269,7 +269,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					{
 						if (ypix * npixels + l < 0 || ypix * npixels + l > npixels * npixels - 1)
 						{
-							std::printf("Error. Caustic crossing takes place outside the desired region.\n");
+							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
 						atomicSub(&(num[ypix * npixels + l]), 1);
@@ -304,7 +304,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					{
 						if (ypix * npixels + l < 0 || ypix * npixels + l > npixels * npixels - 1)
 						{
-							std::printf("Error. Caustic crossing takes place outside the desired region.\n");
+							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
 						atomicAdd(&(num[ypix * npixels + l]), 1);
