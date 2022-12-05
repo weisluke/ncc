@@ -499,7 +499,7 @@ int main(int argc, char* argv[])
 	std::cout << "Done writing parameter info to file " << outfile_prefix << "ncc_parameter_info\n";
 
 	/*histogram of number of caustic crossings map*/
-	std::cout << "\nWriting number of caustic crossings histogram to file " << outfile_prefix << "ncc_ncc_numpixels.txt\n";
+	std::cout << "\nWriting number of caustic crossings histogram...\n";
 	outfile.open(outfile_prefix + "ncc_ncc_numpixels.txt");
 	if (!outfile.is_open())
 	{
