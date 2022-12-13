@@ -6,6 +6,11 @@ Email: weisluke@alum.mit.edu
 *****************************************************************/
 
 
+#include "complex.cuh"
+#include "ncc_microlensing.cuh"
+#include "ncc_read_write_files.cuh"
+#include "util.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -14,22 +19,15 @@ Email: weisluke@alum.mit.edu
 #include <new>
 #include <string>
 
-#include "complex.cuh"
-#include "ncc_microlensing.cuh"
-#include "ncc_read_write_files.cuh"
-#include "util.hpp"
-
 
 
 /*constants to be used*/
-constexpr int OPTS_SIZE = 2 * 10;
+constexpr int OPTS_SIZE = 2 * 8;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
 	"-ip", "--infile_prefix",
 	"-it", "--infile_type",
-	"-cx","--center_x",
-	"-cy", "--center_y",
 	"-hl", "--half_length",
 	"-px", "--pixels",
 	"-wm", "--write_map",
@@ -41,8 +39,6 @@ const std::string OPTS[OPTS_SIZE] =
 /*default input option values*/
 std::string infile_prefix = "./";
 std::string infile_type = ".bin";
-double cx = 0.0;
-double cy = 0.0;
 double half_length = 5.0;
 int num_pixels = 1000;
 int write_map = 1;
@@ -73,24 +69,20 @@ void display_usage(char* name)
 	{
 		std::cout << "Usage: programname opt1 val1 opt2 val2 opt3 val3 ...\n";
 	}
-	std::cout << "Options:\n"
+	std::cout 
+		<< "Options:\n"
 		<< "   -h,--help             Show this help message\n"
 		<< "   -ip,--infile_prefix   Specify the prefix to be used when reading in files.\n"
 		<< "                         Default value: " << infile_prefix << "\n"
 		<< "   -it,--infile_type     Specify the type of input file to be used when reading\n"
 		<< "                         in files. Default value: " << infile_type << "\n"
-		<< "   -cx,--center_x        Specify the x coordinate of the center of the square\n"
+		<< "   -hl,--half_length     Specify the half-length of the square source plane\n"
 		<< "                         region to find the number of caustic crossings in.\n"
-		<< "                         Default value: " << cx << "\n"
-		<< "   -cy,--center_y        Specify the y coordinate of the center of the square\n"
-		<< "                         region to find the number of caustic crossings in.\n"
-		<< "                         Default value: " << cy << "\n"
-		<< "   -hl,--half_length     Specify the half-length of the square region to find\n"
-		<< "                         the number of caustic-crossings in. Default value: " << half_length << "\n"
-		<< "   -px,--pixels          Specify the number of pixels per side length.\n"
-		<< "                         Default value: " << num_pixels << "\n"
-		<< "   -wp,--write_map       Specify whether to write number of caustic crossings\n"
-		<< "                         map. Default value: " << write_map << "\n"
+		<< "                         Default value: " << half_length << "\n"
+		<< "   -px,--pixels          Specify the number of pixels per side for the number\n"
+		<< "                         of caustic crossings map. Default value: " << num_pixels << "\n"
+		<< "   -wp,--write_map       Specify whether to write the number of caustic\n"
+		<< "                         crossings map. Default value: " << write_map << "\n"
 		<< "   -ot,--outfile_type    Specify the type of file to be output. Valid options\n"
 		<< "                         are binary (.bin) or text (.txt). Default value: " << outfile_type << "\n"
 		<< "   -o,--outfile          Specify the prefix to be used in output file names.\n"
@@ -202,30 +194,6 @@ int main(int argc, char* argv[])
 			if (infile_type != ".bin" && infile_type != ".txt")
 			{
 				std::cerr << "Error. Invalid infile_type. infile_type must be .bin or .txt\n";
-				return -1;
-			}
-		}
-		else if (argv[i] == std::string("-cx") || argv[i] == std::string("--center_x"))
-		{
-			try
-			{
-				cx = std::stod(cmdinput);
-			}
-			catch (...)
-			{
-				std::cerr << "Error. Invalid center_x input.\n";
-				return -1;
-			}
-		}
-		else if (argv[i] == std::string("-cy") || argv[i] == std::string("--center_y"))
-		{
-			try
-			{
-				cy = std::stod(cmdinput);
-			}
-			catch (...)
-			{
-				std::cerr << "Error. Invalid center_y input.\n";
 				return -1;
 			}
 		}
@@ -404,15 +372,6 @@ int main(int argc, char* argv[])
 	}
 
 
-	/*offset based on the center of the desired region*/
-	for (int i = 0; i < num_rows; i++)
-	{
-		for (int j = 0; j < num_cols; j++)
-		{
-			caustics[i * num_cols + j] -= Complex<double>(cx, cy);
-		}
-	}
-	
 	/*initialize pixels to 0*/
 	for (int i = 0; i < num_pixels * num_pixels; i++)
 	{
@@ -490,8 +449,6 @@ int main(int argc, char* argv[])
 		std::cerr << "Error. Failed to open file " << outfile_prefix << "ncc_parameter_info.txt\n";
 		return -1;
 	}
-	outfile << "center_x " << cx << "\n";
-	outfile << "center_y " << cy << "\n";
 	outfile << "half_length " << half_length << "\n";
 	outfile << "num_pixels " << num_pixels << "\n";
 	outfile << "t_ncc " << t_ncc << "\n";
