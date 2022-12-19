@@ -20,6 +20,7 @@ Email: weisluke@alum.mit.edu
 #include <string>
 
 
+using dtype = double;
 
 /*constants to be used*/
 constexpr int OPTS_SIZE = 2 * 8;
@@ -39,7 +40,7 @@ const std::string OPTS[OPTS_SIZE] =
 /*default input option values*/
 std::string infile_prefix = "./";
 std::string infile_type = ".bin";
-double half_length = 5.0;
+dtype half_length = static_cast<dtype>(5);
 int num_pixels = 1000;
 int write_map = 1;
 std::string outfile_prefix = "./";
@@ -201,10 +202,10 @@ int main(int argc, char* argv[])
 		{
 			try
 			{
-				half_length = std::stod(cmdinput);
-				if (half_length < std::numeric_limits<double>::min())
+				half_length = static_cast<dtype>(std::stod(cmdinput));
+				if (half_length < std::numeric_limits<dtype>::min())
 				{
-					std::cerr << "Error. Invalid half_length input. half_length must be > " << std::numeric_limits<double>::min() << "\n";
+					std::cerr << "Error. Invalid half_length input. half_length must be > " << std::numeric_limits<dtype>::min() << "\n";
 					return -1;
 				}
 			}
@@ -304,18 +305,18 @@ int main(int argc, char* argv[])
 	BEGIN memory allocation
 	**********************/
 
-	double* xpos = nullptr;
-	double* ypos = nullptr;
-	Complex<double>* caustics = nullptr;
+	dtype* xpos = nullptr;
+	dtype* ypos = nullptr;
+	Complex<dtype>* caustics = nullptr;
 	int* num_crossings = nullptr;
 
-	cudaMallocManaged(&xpos, num_rows * num_cols * sizeof(double));
+	cudaMallocManaged(&xpos, num_rows * num_cols * sizeof(dtype));
 	if (cuda_error("cudaMallocManaged(*xpos)", false, __FILE__, __LINE__)) return -1;
 
-	cudaMallocManaged(&ypos, num_rows* num_cols * sizeof(double));
+	cudaMallocManaged(&ypos, num_rows* num_cols * sizeof(dtype));
 	if (cuda_error("cudaMallocManaged(*ypos)", false, __FILE__, __LINE__)) return -1;
 
-	cudaMallocManaged(&caustics, num_rows* num_cols * sizeof(Complex<double>));
+	cudaMallocManaged(&caustics, num_rows* num_cols * sizeof(Complex<dtype>));
 	if (cuda_error("cudaMallocManaged(*caustics)", false, __FILE__, __LINE__)) return -1;
 
 	cudaMallocManaged(&num_crossings, num_pixels * num_pixels * sizeof(int));
@@ -330,7 +331,7 @@ int main(int argc, char* argv[])
 	{
 		std::cout << "Reading caustic positions from file " << infile_prefix + caustics_file + infile_type << "\n";
 
-		if (!read_complex_array<double>(caustics, num_rows, num_cols, infile_prefix + caustics_file + infile_type))
+		if (!read_complex_array<dtype>(caustics, num_rows, num_cols, infile_prefix + caustics_file + infile_type))
 		{
 			std::cerr << "Error. Unable to read caustic positions from file " << infile_prefix + caustics_file + infile_type << "\n";
 			return -1;
@@ -342,7 +343,7 @@ int main(int argc, char* argv[])
 	{
 		std::cout << "Reading caustic x positions from file " << infile_prefix + caustics_file + "_x" + infile_type << "\n";
 
-		if (!read_re_array<double>(xpos, num_rows, num_cols, infile_prefix + caustics_file + "_x" + infile_type))
+		if (!read_re_array<dtype>(xpos, num_rows, num_cols, infile_prefix + caustics_file + "_x" + infile_type))
 		{
 			std::cerr << "Error. Unable to read caustic x positions from file " << infile_prefix + caustics_file + "_x" + infile_type << "\n";
 			return -1;
@@ -353,7 +354,7 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading caustic y positions from file " << infile_prefix + caustics_file + "_y" + infile_type << "\n";
 
-		if (!read_re_array<double>(ypos, num_rows, num_cols, infile_prefix + caustics_file + "_y" + infile_type))
+		if (!read_re_array<dtype>(ypos, num_rows, num_cols, infile_prefix + caustics_file + "_y" + infile_type))
 		{
 			std::cerr << "Error. Unable to read caustic y positions from file " << infile_prefix + caustics_file + "_y" + infile_type << "\n";
 			return -1;
@@ -366,7 +367,7 @@ int main(int argc, char* argv[])
 		{
 			for (int j = 0; j < num_cols; j++)
 			{
-				caustics[i * num_cols + j] = Complex<double>(xpos[i * num_cols + j], ypos[i * num_cols + j]);
+				caustics[i * num_cols + j] = Complex<dtype>(xpos[i * num_cols + j], ypos[i * num_cols + j]);
 			}
 		}
 	}
@@ -386,16 +387,8 @@ int main(int argc, char* argv[])
 	int num_threads_x = 16;
 
 	int num_blocks_y = static_cast<int>((num_cols - 1) / num_threads_y) + 1;
-	if (num_blocks_y > 32768 || num_blocks_y < 1)
-	{
-		num_blocks_y = 32768;
-	}
-
 	int num_blocks_x = static_cast<int>((num_rows - 1) / num_threads_x) + 1;
-	if (num_blocks_x > 32768 || num_blocks_x < 1)
-	{
-		num_blocks_x = 32768;
-	}
+
 	dim3 blocks(num_blocks_x, num_blocks_y);
 	dim3 threads(num_threads_x, num_threads_y);
 
@@ -407,7 +400,7 @@ int main(int argc, char* argv[])
 	std::cout << "\nCalculating number of caustic crossings...\n";
 	/*get current time at start of loop*/
 	starttime = std::chrono::high_resolution_clock::now();
-	find_num_caustic_crossings_kernel<double> <<<blocks, threads >>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
+	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads >>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
 	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
 	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();

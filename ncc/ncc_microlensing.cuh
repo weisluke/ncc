@@ -15,9 +15,9 @@ return the sign of a number
 template <typename T>
 __device__ T sgn(T val)
 {
-	if (val < -0) return -1;
-	if (val > 0) return 1;
-	return val;
+	if (val < -0) return static_cast<T>(-1);
+	if (val > 0) return static_cast<T>(1);
+	return static_cast<T>(0);
 }
 
 /*********************************************************
@@ -43,8 +43,6 @@ __device__ bool point_in_region(Complex<T> p0, T hl)
 	return false;
 }
 
-
-
 /*****************************************************************************
 return the x position of a line connecting two points, at a particular y-value
 handles vertical lines by returning the x position of the first point
@@ -62,7 +60,7 @@ __device__ T get_line_x_position(Complex<T> p0, Complex<T> p1, T y)
 	{
 		return p0.re;
 	}
-	double slope = (p1.im - p0.im) / (p1.re - p0.re);
+	T slope = (p1.im - p0.im) / (p1.re - p0.re);
 	return (y - p0.im) / slope + p0.re;
 }
 
@@ -83,7 +81,7 @@ __device__ T get_line_y_position(Complex<T> p0, Complex<T> p1, T x)
 	{
 		return p0.im;
 	}
-	double slope = (p1.im - p0.im) / (p1.re - p0.re);
+	T slope = (p1.im - p0.im) / (p1.re - p0.re);
 	return slope * (x - p0.re) + p0.im;
 }
 
@@ -110,7 +108,7 @@ __device__ Complex<T> corrected_point(Complex<T> p0, Complex<T> p1, T hl, int np
 		/*if the x position is outside of our region, calculate where the point would
 		be with an x position 1/100 of a pixel inside the desired region
 		1/100 used due to later code only considering line crossings at the half pixel mark*/
-		x = -hl + 0.01 * (2.0 * hl) / npixels;
+		x = -hl + 0.01 * 2 * hl / npixels;
 		y = get_line_y_position(p0, p1, x);
 	}
 	if (fabs(y) >= hl)
@@ -118,7 +116,7 @@ __device__ Complex<T> corrected_point(Complex<T> p0, Complex<T> p1, T hl, int np
 		/*if the y position is outside of our region, calculate where the point would
 		be with a y position 1/100 of a pixel inside the desired region
 		1/100 used due to later code only considering line crossings at the half pixel mark*/
-		y = sgn(y) * (hl - 0.01 * (2.0 * hl) / npixels);
+		y = sgn(y) * (hl - 0.01 * 2 * hl / npixels);
 		x = get_line_x_position(p0, p1, y);
 	}
 
@@ -138,7 +136,7 @@ calculate the pixel mapping of a position
 template <typename T>
 __device__ T point_to_pixel(T p0, T halflength, int npixels)
 {
-	return (halflength + p0) * npixels / (2.0 * halflength);
+	return (halflength + p0) * npixels / (2 * halflength);
 }
 
 /******************************************************
@@ -222,7 +220,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			/*offset start by half a pixel in the direction of the ordered points
 			this will ensure that after casting things to integer pixel values,
 			we are only using pixels for which the segment crosses the center*/
-			ystart += sgn(pt1.im - pt0.im) * 0.5;
+			ystart += sgn(pt1.im - pt0.im) / 2;
 
 			/*take into account starting points between 0 and 0.5 that get pushed outside the
 			desired region, i.e. below 0, if y_end < y_start (e.g., a line from y=0.4 to y=0.1

@@ -14,10 +14,36 @@ public:
 	T im;
 
 	/*default constructor initializes the complex number to zero*/
-	__host__ __device__ Complex(T real = 0, T imag = 0)
+	__host__ __device__ Complex(T real = static_cast<T>(0), T imag = static_cast<T>(0))
 	{
 		re = real;
 		im = imag;
+	}
+
+	/*copy constructors*/
+	template <typename U> __host__ __device__ Complex(const Complex<U>& c1)
+	{
+		re = static_cast<T>(c1.re);
+		im = static_cast<T>(c1.im);
+	}
+	template <typename U> __host__ __device__ Complex(const U& num)
+	{
+		re = static_cast<T>(num);
+		im = static_cast<T>(0);
+	}
+
+	/*assignment operators*/
+	template <typename U> __host__ __device__ Complex& operator=(const Complex<U>& c1)
+	{
+		re = static_cast<T>(c1.re);
+		im = static_cast<T>(c1.im);
+		return *this;
+	}
+	template <typename U> __host__ __device__ Complex& operator=(U num)
+	{
+		re = static_cast<T>(num);
+		im = static_cast<T>(0);
+		return *this;
 	}
 
 	/*complex conjugate of the complex number*/
