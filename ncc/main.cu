@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 	{
 		if (!cmd_option_valid(OPTS, OPTS + OPTS_SIZE, argv[i]))
 		{
-			std::cerr << "Error. Invalid input syntax.\n";
+			std::cerr << "Error. Invalid input syntax. Unknown option " << argv[i] << "\n";
 			display_usage(argv[0]);
 			return -1;
 		}
