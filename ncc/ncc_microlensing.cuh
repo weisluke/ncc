@@ -315,3 +315,34 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 	}
 }
 
+/******************************************************
+reduce the pixel array
+
+\param num1 -- old array of number of caustic crossings
+\param npixels -- number of pixels per side for
+				  the square region
+\param num2 -- old array of number of caustic crossings
+******************************************************/
+template <typename T>
+__global__ void reduce_pix_array_kernel(int* num1, int npixels, int* num2)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
+	int y_stride = blockDim.y * gridDim.y;
+
+	for (int i = x_index; i < npixels; i += x_stride)
+	{
+		for (int j = y_index; j < npixels; j += y_stride)
+		{
+			int n1 = num1[2 * j * 2 * npixels + 2 * i];
+			int n2 = num1[2 * j * 2 * npixels + 2 * i + 1];
+			int n3 = num1[(2 * j + 1) * 2 * npixels + 2 * i];
+			int n4 = num1[(2 * j + 1) * 2 * npixels + 2 * i + 1];
+
+			num2[j * npixels + i] = max(max(n1, n2), max(n3, n4));
+		}
+	}
+}
+

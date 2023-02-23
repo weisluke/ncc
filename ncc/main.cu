@@ -308,6 +308,8 @@ int main(int argc, char* argv[])
 	dtype* xpos = nullptr;
 	dtype* ypos = nullptr;
 	Complex<dtype>* caustics = nullptr;
+	int* num_crossings_4 = nullptr;
+	int* num_crossings_2 = nullptr;
 	int* num_crossings = nullptr;
 
 	cudaMallocManaged(&xpos, num_rows * num_cols * sizeof(dtype));
@@ -318,6 +320,12 @@ int main(int argc, char* argv[])
 
 	cudaMallocManaged(&caustics, num_rows* num_cols * sizeof(Complex<dtype>));
 	if (cuda_error("cudaMallocManaged(*caustics)", false, __FILE__, __LINE__)) return -1;
+
+	cudaMallocManaged(&num_crossings_4, 4 * num_pixels * 4 * num_pixels * sizeof(int));
+	if (cuda_error("cudaMallocManaged(*num_crossings_4)", false, __FILE__, __LINE__)) return -1;
+
+	cudaMallocManaged(&num_crossings_2, 2 * num_pixels * 2 * num_pixels * sizeof(int));
+	if (cuda_error("cudaMallocManaged(*num_crossings_2)", false, __FILE__, __LINE__)) return -1;
 
 	cudaMallocManaged(&num_crossings, num_pixels * num_pixels * sizeof(int));
 	if (cuda_error("cudaMallocManaged(*num_crossings)", false, __FILE__, __LINE__)) return -1;
@@ -400,12 +408,24 @@ int main(int argc, char* argv[])
 	std::cout << "\nCalculating number of caustic crossings...\n";
 	/*get current time at start of loop*/
 	starttime = std::chrono::high_resolution_clock::now();
-	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads >>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
+	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length, num_crossings_4, 4 * num_pixels);
 	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
 	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();
 	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
 	std::cout << "Done finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n";
+
+	std::cout << "\nDownsampling number of caustic crossings...\n";
+	/*get current time at start of loop*/
+	starttime = std::chrono::high_resolution_clock::now();
+	reduce_pix_array_kernel<int> <<<blocks, threads>>> (num_crossings_4, 2 * num_pixels, num_crossings_2);
+	if (cuda_error("reduce_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
+	reduce_pix_array_kernel<int> <<<blocks, threads>>> (num_crossings_2, num_pixels, num_crossings);
+	if (cuda_error("reduce_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
+	/*get current time at end of loop, and calculate duration in milliseconds*/
+	endtime = std::chrono::high_resolution_clock::now();
+	double t_reduce = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
+	std::cout << "Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n";
 
 
 	/*create histogram of pixel values*/
