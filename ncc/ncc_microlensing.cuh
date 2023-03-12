@@ -315,16 +315,14 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 	}
 }
 
-/******************************************************
-reduce the pixel array
+/**********************************************************************
+initialize array of pixels to 0
 
-\param num1 -- old array of number of caustic crossings
-\param npixels -- number of pixels per side for
-				  the square region
-\param num2 -- old array of number of caustic crossings
-******************************************************/
+\param pixels -- pointer to array of pixels
+\param npixels -- number of pixels for one side of the receiving square
+**********************************************************************/
 template <typename T>
-__global__ void reduce_pix_array_kernel(int* num1, int npixels, int* num2)
+__global__ void initialize_pixels_kernel(int* pixels, int npixels)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -336,13 +334,75 @@ __global__ void reduce_pix_array_kernel(int* num1, int npixels, int* num2)
 	{
 		for (int j = y_index; j < npixels; j += y_stride)
 		{
-			int n1 = num1[2 * j * 2 * npixels + 2 * i];
-			int n2 = num1[2 * j * 2 * npixels + 2 * i + 1];
-			int n3 = num1[(2 * j + 1) * 2 * npixels + 2 * i];
-			int n4 = num1[(2 * j + 1) * 2 * npixels + 2 * i + 1];
-
-			num2[j * npixels + i] = max(max(n1, n2), max(n3, n4));
+			pixels[j * npixels + i] = 0;
 		}
+	}
+}
+
+/*************************************************
+reduce the pixel array
+
+\param num -- array of number of caustic crossings
+\param npixels -- number of pixels per side for
+				  the square region
+*************************************************/
+template <typename T>
+__global__ void reduce_pix_array_kernel(int* num, int npixels)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
+	int y_stride = blockDim.y * gridDim.y;
+
+	for (int i = x_index; i < npixels; i += x_stride)
+	{
+		for (int j = y_index; j < npixels; j += y_stride)
+		{
+			int n1 = num[2 * j * 2 * npixels + 2 * i];
+			int n2 = num[2 * j * 2 * npixels + 2 * i + 1];
+			int n3 = num[(2 * j + 1) * 2 * npixels + 2 * i];
+			int n4 = num[(2 * j + 1) * 2 * npixels + 2 * i + 1];
+
+			num[2 * j * 2 * npixels + 2 * i] = max(max(n1, n2), max(n3, n4));
+		}
+	}
+}
+
+/*************************************************
+shift the pixel array
+
+\param num -- array of number of caustic crossings
+\param npixels -- number of pixels per side for
+				  the square region
+*************************************************/
+template <typename T>
+void shift_pix_array(int* num, int npixels)
+{
+	for (int i = 0; i < npixels * npixels; i++)
+	{
+		int j = i / npixels;
+		num[i] = num[2 * j * 2 * npixels + 2 * (i % npixels)];
+	}
+}
+
+/*************************************************
+shift the pixel array
+
+\param num -- array of number of caustic crossings
+\param npixels -- number of pixels per side for
+				  the square region
+*************************************************/
+template <typename T>
+__global__ void shift_pix_array_kernel(int* num, int npixels)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	for (int i = x_index; i < npixels * npixels - npixels * npixels / 4; i += x_stride)
+	{
+		int j = npixels / 4 + i / npixels;
+		num[npixels * npixels / 4 + i] = num[2 * j * 2 * npixels + 2 * ((i + npixels * npixels / 4) % npixels)];
 	}
 }
 
