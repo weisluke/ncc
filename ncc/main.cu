@@ -23,7 +23,7 @@ Email: weisluke@alum.mit.edu
 using dtype = double;
 
 /*constants to be used*/
-constexpr int OPTS_SIZE = 2 * 8;
+constexpr int OPTS_SIZE = 2 * 9;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
@@ -31,6 +31,7 @@ const std::string OPTS[OPTS_SIZE] =
 	"-it", "--infile_type",
 	"-hl", "--half_length",
 	"-px", "--pixels",
+	"-os", "--over_sample",
 	"-wm", "--write_map",
 	"-ot", "--outfile_type",
 	"-o", "--outfile_prefix"
@@ -42,6 +43,7 @@ std::string infile_prefix = "./";
 std::string infile_type = ".bin";
 dtype half_length = static_cast<dtype>(5);
 int num_pixels = 1000;
+int over_sample = 2;
 int write_map = 1;
 std::string outfile_prefix = "./";
 std::string outfile_type = ".bin";
@@ -82,6 +84,11 @@ void display_usage(char* name)
 		<< "                         Default value: " << half_length << "\n"
 		<< "   -px,--pixels          Specify the number of pixels per side for the number\n"
 		<< "                         of caustic crossings map. Default value: " << num_pixels << "\n"
+		<< "   -os,--over_sample     Specify the power of 2 by which to oversample the\n"
+		<< "                         final pixels. E.g., an input of 4 means the final\n"
+		<< "                         pixel array will initially be oversampled by a value\n"
+		<< "                         of 2^4 = 16 along both axes. This will require\n"
+		<< "                         16*16 = 256 times more memory. Default value: " << over_sample << "\n"
 		<< "   -wp,--write_map       Specify whether to write the number of caustic\n"
 		<< "                         crossings map. Default value: " << write_map << "\n"
 		<< "   -ot,--outfile_type    Specify the type of file to be output. Valid options\n"
@@ -232,6 +239,23 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 		}
+		else if (argv[i] == std::string("-os") || argv[i] == std::string("--over_sample"))
+		{
+			try
+			{
+				over_sample = std::stoi(cmdinput);
+				if (over_sample < 0)
+				{
+					std::cerr << "Error. Invalid over_sample input. over_sample must be an integer >= 0\n";
+					return -1;
+				}
+			}
+			catch (...)
+			{
+				std::cerr << "Error. Invalid over_sample input.\n";
+				return -1;
+			}
+		}
 		else if (argv[i] == std::string("-wm") || argv[i] == std::string("--write_map"))
 		{
 			try
@@ -300,16 +324,18 @@ int main(int argc, char* argv[])
 		std::cout << "Done calculating some parameter values from parameter info file " << infile_prefix + caustics_parameter_file << "\n";
 	}
 
+	num_pixels <<= over_sample;
+
 
 	/**********************
 	BEGIN memory allocation
 	**********************/
 
+	std::cout << "Beginning memory allocation...\n";
+
 	dtype* xpos = nullptr;
 	dtype* ypos = nullptr;
 	Complex<dtype>* caustics = nullptr;
-	int* num_crossings_4 = nullptr;
-	int* num_crossings_2 = nullptr;
 	int* num_crossings = nullptr;
 
 	cudaMallocManaged(&xpos, num_rows * num_cols * sizeof(dtype));
@@ -321,14 +347,10 @@ int main(int argc, char* argv[])
 	cudaMallocManaged(&caustics, num_rows* num_cols * sizeof(Complex<dtype>));
 	if (cuda_error("cudaMallocManaged(*caustics)", false, __FILE__, __LINE__)) return -1;
 
-	cudaMallocManaged(&num_crossings_4, 4 * num_pixels * 4 * num_pixels * sizeof(int));
-	if (cuda_error("cudaMallocManaged(*num_crossings_4)", false, __FILE__, __LINE__)) return -1;
-
-	cudaMallocManaged(&num_crossings_2, 2 * num_pixels * 2 * num_pixels * sizeof(int));
-	if (cuda_error("cudaMallocManaged(*num_crossings_2)", false, __FILE__, __LINE__)) return -1;
-
 	cudaMallocManaged(&num_crossings, num_pixels * num_pixels * sizeof(int));
 	if (cuda_error("cudaMallocManaged(*num_crossings)", false, __FILE__, __LINE__)) return -1;
+
+	std::cout << "Done allocating memory.\n";
 
 	/********************
 	END memory allocation
@@ -381,24 +403,32 @@ int main(int argc, char* argv[])
 	}
 
 
-	/*initialize pixels to 0*/
-	for (int i = 0; i < num_pixels * num_pixels; i++)
-	{
-		num_crossings[i] = 0;
-	}
-
-
 	/*number of threads per block, and number of blocks per grid
 	uses empirical values for maximum number of threads and blocks*/
 
+	int num_threads_z = 1;
 	int num_threads_y = 16;
 	int num_threads_x = 16;
 
-	int num_blocks_y = static_cast<int>((num_cols - 1) / num_threads_y) + 1;
-	int num_blocks_x = static_cast<int>((num_rows - 1) / num_threads_x) + 1;
+	int num_blocks_z = 1;
+	int num_blocks_y = static_cast<int>((num_pixels - 1) / num_threads_y) + 1;
+	int num_blocks_x = static_cast<int>((num_pixels - 1) / num_threads_x) + 1;
 
-	dim3 blocks(num_blocks_x, num_blocks_y);
-	dim3 threads(num_threads_x, num_threads_y);
+	dim3 blocks(num_blocks_x, num_blocks_y, num_blocks_z);
+	dim3 threads(num_threads_x, num_threads_y, num_threads_z);
+
+
+	/*initialize pixel values*/
+	initialize_pixels_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
+	if (cuda_error("initialize_pixels_kernel", true, __FILE__, __LINE__)) return -1;
+
+
+	/*redefine thread and block size to maximize parallelization*/
+	num_blocks_y = static_cast<int>((num_cols - 1) / num_threads_y) + 1;
+	num_blocks_x = static_cast<int>((num_rows - 1) / num_threads_x) + 1;
+
+	blocks.x = num_blocks_x;
+	blocks.y = num_blocks_y;
 
 
 	/*start and end time for timing purposes*/
@@ -408,20 +438,54 @@ int main(int argc, char* argv[])
 	std::cout << "\nCalculating number of caustic crossings...\n";
 	/*get current time at start of loop*/
 	starttime = std::chrono::high_resolution_clock::now();
-	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length, num_crossings_4, 4 * num_pixels);
+	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
 	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
 	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();
 	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
 	std::cout << "Done finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n";
 
+
 	std::cout << "\nDownsampling number of caustic crossings...\n";
 	/*get current time at start of loop*/
 	starttime = std::chrono::high_resolution_clock::now();
-	reduce_pix_array_kernel<int> <<<blocks, threads>>> (num_crossings_4, 2 * num_pixels, num_crossings_2);
-	if (cuda_error("reduce_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
-	reduce_pix_array_kernel<int> <<<blocks, threads>>> (num_crossings_2, num_pixels, num_crossings);
-	if (cuda_error("reduce_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
+
+	for (int i = 0; i < over_sample; i++)
+	{
+		num_pixels >>= 1;
+
+		num_threads_y = 16;
+		num_threads_x = 16;
+		num_blocks_y = static_cast<int>((num_pixels - 1) / num_threads_y) + 1;
+		num_blocks_x = static_cast<int>((num_pixels - 1) / num_threads_x) + 1;
+		blocks.x = num_blocks_x;
+		blocks.y = num_blocks_y;
+		threads.x = num_threads_x;
+		threads.y = num_threads_y;
+
+		reduce_pix_array_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
+		if (cuda_error("reduce_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
+
+		num_threads_y = 1;
+		num_threads_x = 512;
+		num_blocks_y = 1;
+		num_blocks_x = static_cast<int>((num_pixels - 1) / num_threads_x) + 1;
+		blocks.x = num_blocks_x;
+		blocks.y = num_blocks_y;
+		threads.x = num_threads_x;
+		threads.y = num_threads_y;
+
+		for (int j = 1; j < num_pixels; j++)
+		{
+			shift_pix_column_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels, j);
+		}
+		for (int j = 1; j < num_pixels; j++)
+		{
+			shift_pix_row_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels, j);
+		}
+		if (cuda_error("shift_pix_kernel", true, __FILE__, __LINE__)) return -1;
+	}
+
 	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();
 	double t_reduce = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
@@ -464,6 +528,7 @@ int main(int argc, char* argv[])
 	}
 	outfile << "half_length " << half_length << "\n";
 	outfile << "num_pixels " << num_pixels << "\n";
+	outfile << "over_sample " << over_sample << "\n";
 	outfile << "t_ncc " << t_ncc << "\n";
 	outfile.close();
 	std::cout << "Done writing parameter info to file " << outfile_prefix << "ncc_parameter_info\n";
