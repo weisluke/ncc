@@ -469,15 +469,21 @@ int main(int argc, char* argv[])
 		num_threads_y = 1;
 		num_threads_x = 512;
 		num_blocks_y = 1;
-		num_blocks_x = static_cast<int>((num_pixels * num_pixels - 1) / num_threads_x) + 1;
+		num_blocks_x = static_cast<int>((num_pixels - 1) / num_threads_x) + 1;
 		blocks.x = num_blocks_x;
 		blocks.y = num_blocks_y;
 		threads.x = num_threads_x;
 		threads.y = num_threads_y;
 
-		shift_pix_array<dtype>(num_crossings, num_pixels);
-		//shift_pix_array_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
-		//if (cuda_error("shift_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
+		for (int j = 1; j < num_pixels; j++)
+		{
+			shift_pix_column_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels, j);
+		}
+		for (int j = 1; j < num_pixels; j++)
+		{
+			shift_pix_row_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels, j);
+		}
+		if (cuda_error("shift_pix_kernel", true, __FILE__, __LINE__)) return -1;
 	}
 
 	/*get current time at end of loop, and calculate duration in milliseconds*/

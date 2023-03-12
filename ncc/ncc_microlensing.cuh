@@ -370,39 +370,42 @@ __global__ void reduce_pix_array_kernel(int* num, int npixels)
 }
 
 /*************************************************
-shift the pixel array
+shift the provided pixel column from 2*i to i
 
 \param num -- array of number of caustic crossings
 \param npixels -- number of pixels per side for
 				  the square region
+\param column -- the column to shift to
 *************************************************/
 template <typename T>
-void shift_pix_array(int* num, int npixels)
-{
-	for (int i = 0; i < npixels * npixels; i++)
-	{
-		int j = i / npixels;
-		num[i] = num[2 * j * 2 * npixels + 2 * (i % npixels)];
-	}
-}
-
-/*************************************************
-shift the pixel array
-
-\param num -- array of number of caustic crossings
-\param npixels -- number of pixels per side for
-				  the square region
-*************************************************/
-template <typename T>
-__global__ void shift_pix_array_kernel(int* num, int npixels)
+__global__ void shift_pix_column_kernel(int* num, int npixels, int column)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
 
-	for (int i = x_index; i < npixels * npixels - npixels * npixels / 4; i += x_stride)
+	for (int i = x_index; i < npixels; i += x_stride)
 	{
-		int j = npixels / 4 + i / npixels;
-		num[npixels * npixels / 4 + i] = num[2 * j * 2 * npixels + 2 * ((i + npixels * npixels / 4) % npixels)];
+		num[2 * i * 2 * npixels + column] = num[2 * i * 2 * npixels + 2 * column];
+	}
+}
+
+/*************************************************
+shift the provided pixel row from 2*i to i
+
+\param num -- array of number of caustic crossings
+\param npixels -- number of pixels per side for
+				  the square region
+\param row -- the row to shift to
+*************************************************/
+template <typename T>
+__global__ void shift_pix_row_kernel(int* num, int npixels, int row)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	for (int i = x_index; i < npixels; i += x_stride)
+	{
+		num[row * npixels + i] = num[2 * row * 2 * npixels + i];
 	}
 }
 
