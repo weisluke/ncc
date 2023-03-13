@@ -201,22 +201,18 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			Complex<T> pixpt1 = point_to_pixel(pt1, hl, npixels);
 
 			/*find starting and ending pixel positions including fractional parts*/
-			double xstart = pixpt0.re;
-			double ystart = pixpt0.im;
-			double xend = pixpt1.re;
-			double yend = pixpt1.im;
+			T ystart = pixpt0.im;
+			T yend = pixpt1.im;
 
 			/*if caustic subsegment starts or ends exactly in the middle of a pixel, shift starting position down by 0.01 pixels
 			done to avoid double-counting crossings at that particular point, since it is the end of one segment and the start of another*/
 			if (ystart == static_cast<int>(ystart) + 0.5)
 			{
 				ystart -= 0.01;
-				xstart = get_line_x_position(pixpt0, pixpt1, ystart);
 			}
 			if (yend == static_cast<int>(yend) + 0.5)
 			{
 				yend -= 0.01;
-				xend = get_line_x_position(pixpt0, pixpt1, yend);
 			}
 
 			/*offset start by half a pixel in the direction of the ordered points
@@ -239,6 +235,8 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			/*find actual starting y value at pixel center*/
 			ystart = static_cast<int>(ystart) + 0.5;
 
+			Complex<int> ypix;
+
 			/*our caustics are traced in a clockwise manner
 			if p1.y > p0.y, then as a line from a pixel center goes to infinity towards
 			the right, we are entering a caustic region if we cross this segment
@@ -249,7 +247,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			{
 				/*for all y-values from the start of the line segment (at a half-pixel)
 				to the end (could be anywhere) in increments of one pixel*/
-				for (double k = ystart; k < yend; k += 1.0)
+				for (T k = ystart; k < yend; k += 1)
 				{
 					/*find the x position of the caustic segment at the current y value
 					find the integer pixel value for this x-position (subtracting
@@ -257,22 +255,22 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					of the pixel center) and the integer y pixel value
 					if the x-pixel value is greater than the number of pixels,
 					we perform the subtraction on the whole pixel row*/
-					double x1 = get_line_x_position(pixpt0, pixpt1, k);
-					int xpix = static_cast<int>(x1 - 0.5);
-					int ypix = static_cast<int>(k);
-					ypix = npixels - 1 - ypix;
-					if (xpix > npixels - 1)
+					T x1 = get_line_x_position(pixpt0, pixpt1, k);
+					ypix = Complex<int>(x1 - 0.5, k);
+
+					ypix.im = npixels - 1 - ypix.im;
+					if (ypix.re > npixels - 1)
 					{
-						xpix = npixels - 1;
+						ypix.re = npixels - 1;
 					}
-					for (int l = 0; l < (xpix + 1); l++)
+					for (int l = 0; l <= ypix.re; l++)
 					{
-						if (ypix * npixels + l < 0 || ypix * npixels + l > npixels * npixels - 1)
+						if (ypix.im * npixels + l < 0 || ypix.im * npixels + l > npixels * npixels - 1)
 						{
 							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
-						atomicSub(&(num[ypix * npixels + l]), 1);
+						atomicSub(&(num[ypix.im * npixels + l]), 1);
 					}
 				}
 			}
@@ -284,7 +282,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			to the left of the line segment*/
 			else if (pt0.im > pt1.im)
 			{
-				for (double k = ystart; k > yend; k -= 1.0)
+				for (T k = ystart; k > yend; k -= 1)
 				{
 					/*find the x position of the caustic segment at the current y value
 					find the integer pixel value for this x-position (subtracting
@@ -292,22 +290,22 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					of the pixel center) and the integer y pixel value
 					if the x-pixel value is greater than the number of pixels,
 					we perform the addition on the whole pixel row*/
-					double x1 = get_line_x_position(pixpt0, pixpt1, k);
-					int xpix = static_cast<int>(x1 - 0.5);
-					int ypix = static_cast<int>(k);
-					ypix = npixels - 1 - ypix;
-					if (xpix > npixels - 1)
+					T x1 = get_line_x_position(pixpt0, pixpt1, k);
+					ypix = Complex<int>(x1 - 0.5, k);
+
+					ypix.im = npixels - 1 - ypix.im;
+					if (ypix.re > npixels - 1)
 					{
-						xpix = npixels - 1;
+						ypix.re = npixels - 1;
 					}
-					for (int l = 0; l < (xpix + 1); l++)
+					for (int l = 0; l <= ypix.re; l++)
 					{
-						if (ypix * npixels + l < 0 || ypix * npixels + l > npixels * npixels - 1)
+						if (ypix.im * npixels + l < 0 || ypix.im * npixels + l > npixels * npixels - 1)
 						{
 							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
-						atomicAdd(&(num[ypix * npixels + l]), 1);
+						atomicAdd(&(num[ypix.im * npixels + l]), 1);
 					}
 				}
 			}
