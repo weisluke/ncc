@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "complex.cuh"
+
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -7,8 +9,6 @@
 #include <new>
 #include <string>
 #include <system_error>
-
-#include "complex.cuh"
 
 
 /***********************************************************
@@ -169,6 +169,7 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 		else
 		{
 			std::cerr << "Error. Binary file does not contain valid single or double precision numbers.\n";
+			infile.close();
 			return false;
 		}
 
@@ -259,6 +260,7 @@ bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 			}
 			outfile << "\n";
 		}
+		outfile.close();
 	}
 	else if (fpath.extension() == ".bin")
 	{
@@ -280,6 +282,49 @@ bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 		std::cerr << "Error. File " << fname << " is not a .bin or .txt file.\n";
 		return false;
 	}
+
+	return true;
+}
+
+/**************************************************************
+write histogram
+
+\param histogram -- pointer to histogram
+\param n -- length of histogram
+\param minnum -- minimum number of crossings
+\param fname -- location of the file to write to
+
+\return bool -- true if file successfully written, false if not
+**************************************************************/
+template <typename T>
+bool write_histogram(int* histogram, int n, int minnum, const std::string& fname)
+{
+	std::filesystem::path fpath = fname;
+
+	if (fpath.extension() != ".txt")
+	{
+		std::cerr << "Error. File " << fname << " is not a .txt file.\n";
+		return false;
+	}
+
+	std::ofstream outfile;
+
+	outfile.precision(9);
+	outfile.open(fname);
+
+	if (!outfile.is_open())
+	{
+		std::cerr << "Error. Failed to open file " << fname << "\n";
+		return false;
+	}
+	for (int i = 0; i < n; i++)
+	{
+		if (histogram[i] != 0)
+		{
+			outfile << i + minnum << " " << histogram[i] << "\n";
+		}
+	}
+	outfile.close();
 
 	return true;
 }

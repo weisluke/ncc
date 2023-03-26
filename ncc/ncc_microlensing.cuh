@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include <cstdio>
-
 #include "complex.cuh"
+
+#include <cstdio>
 
 
 /***************************************
@@ -313,6 +313,33 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 	}
 }
 
+/***************************************************************
+copy caustic x and y positions to single complex array
+
+\param xpos -- pointer to array of caustic x positions
+\param ypos -- pointer to array of caustic y positions
+\param caustics -- pointer to array of complex caustic positions
+\param nrows -- number of rows in the caustic array
+\param ncols -- number of columns in the caustic array
+***************************************************************/
+template <typename T>
+__global__ void copy_caustics_kernel(T* xpos, T* ypos, Complex<T>* caustics, int nrows, int ncols)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
+	int y_stride = blockDim.y * gridDim.y;
+
+	for (int i = x_index; i < nrows; i += x_stride)
+	{
+		for (int j = y_index; j < ncols; j += y_stride)
+		{
+			caustics[i * ncols + j] = Complex<T>(xpos[i * ncols + j], ypos[i * ncols + j]);
+		}
+	}
+}
+
 /**********************************************************************
 initialize array of pixels to 0
 
@@ -404,6 +431,77 @@ __global__ void shift_pix_row_kernel(int* num, int npixels, int row)
 	for (int i = x_index; i < npixels; i += x_stride)
 	{
 		num[row * npixels + i] = num[2 * row * 2 * npixels + i];
+	}
+}
+
+/***********************************************************************
+calculate the minimum and maximum number of crossings in the pixel array
+
+\param pixels -- pointer to array of pixels
+\param npixels -- number of pixels for one side of the receiving square
+\param minnum -- pointer to minimum number of crossings
+\param maxnum -- pointer to maximum number of crossings
+***********************************************************************/
+template <typename T>
+__global__ void histogram_min_max_kernel(int* pixels, int npixels, int* minnum, int* maxnum)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
+	int y_stride = blockDim.y * gridDim.y;
+
+	for (int i = x_index; i < npixels; i += x_stride)
+	{
+		for (int j = y_index; j < npixels; j += y_stride)
+		{
+			atomicMin(minnum, pixels[j * npixels + i]);
+			atomicMax(maxnum, pixels[j * npixels + i]);
+		}
+	}
+}
+
+/***************************************
+initialize histogram values to 0
+
+\param histogram -- pointer to histogram
+\param n -- length of histogram
+***************************************/
+template <typename T>
+__global__ void initialize_histogram_kernel(int* histogram, int n)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	for (int i = x_index; i < n; i += x_stride)
+	{
+		histogram[i] = 0;
+	}
+}
+
+/**********************************************************************
+calculate the histogram of crossings for the pixel array
+
+\param pixels -- pointer to array of pixels
+\param npixels -- number of pixels for one side of the receiving square
+\param minnum -- minimum number of crossings
+\param histogram -- pointer to histogram
+**********************************************************************/
+template <typename T>
+__global__ void histogram_kernel(int* pixels, int npixels, int minnum, int* histogram)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
+	int y_stride = blockDim.y * gridDim.y;
+
+	for (int i = x_index; i < npixels; i += x_stride)
+	{
+		for (int j = y_index; j < npixels; j += y_stride)
+		{
+			atomicAdd(&(histogram[pixels[j * npixels + i] - minnum]), 1);
+		}
 	}
 }
 
