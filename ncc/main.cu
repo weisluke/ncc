@@ -1,9 +1,9 @@
-/*****************************************************************
+/******************************************************************************
 
 Please provide credit to Luke Weisenbach should this code be used.
 Email: weisluke@alum.mit.edu
 
-*****************************************************************/
+******************************************************************************/
 
 
 #include "complex.cuh"
@@ -22,7 +22,9 @@ Email: weisluke@alum.mit.edu
 
 using dtype = double;
 
-/*constants to be used*/
+/******************************************************************************
+constants to be used
+******************************************************************************/
 constexpr int OPTS_SIZE = 2 * 10;
 const std::string OPTS[OPTS_SIZE] =
 {
@@ -39,7 +41,9 @@ const std::string OPTS[OPTS_SIZE] =
 };
 
 
-/*default input option values*/
+/******************************************************************************
+default input option values
+******************************************************************************/
 std::string infile_prefix = "./";
 std::string infile_type = ".bin";
 dtype half_length = static_cast<dtype>(5);
@@ -50,7 +54,9 @@ int write_histograms = 1;
 std::string outfile_prefix = "./";
 std::string outfile_type = ".bin";
 
-/*default variable values*/
+/******************************************************************************
+default variable values
+******************************************************************************/
 const std::string caustics_parameter_file = "ccf_parameter_info.txt";
 const std::string caustics_file = "ccf_caustics";
 
@@ -59,11 +65,11 @@ int num_cols = 0;
 
 
 
-/************************************
+/******************************************************************************
 Print the program usage help message
 
 \param name -- name of the executable
-************************************/
+******************************************************************************/
 void display_usage(char* name)
 {
 	if (name)
@@ -119,16 +125,25 @@ void display_usage(char* name)
 
 int main(int argc, char* argv[])
 {
-	/*if help option has been input, display usage message*/
+	/******************************************************************************
+	set precision for printing numbers to screen
+	******************************************************************************/
+	std::cout.precision(7);
+
+	/******************************************************************************
+	if help option has been input, display usage message
+	******************************************************************************/
 	if (cmd_option_exists(argv, argv + argc, std::string("-h")) || cmd_option_exists(argv, argv + argc, std::string("--help")))
 	{
 		display_usage(argv[0]);
 		return -1;
 	}
 
-	/*if there are input options, but not an even number (since all options
-	take a parameter), display usage message and exit
-	subtract 1 to take into account that first argument array value is program name*/
+	/******************************************************************************
+	if there are input options, but not an even number (since all options take a
+	parameter), display usage message and exit
+	subtract 1 to take into account that first argument array value is program name
+	******************************************************************************/
 	if ((argc - 1) % 2 != 0)
 	{
 		std::cerr << "Error. Invalid input syntax.\n";
@@ -136,9 +151,11 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	/*check that all options given are valid. use step of 2 since all input
-	options take parameters (assumed to be given immediately after the option)
-	start at 1, since first array element, argv[0], is program name*/
+	/******************************************************************************
+	check that all options given are valid. use step of 2 since all input options
+	take parameters (assumed to be given immediately after the option). start at 1,
+	since first array element, argv[0], is program name
+	******************************************************************************/
 	for (int i = 1; i < argc; i += 2)
 	{
 		if (!cmd_option_valid(OPTS, OPTS + OPTS_SIZE, argv[i]))
@@ -148,6 +165,7 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 	}
+
 
 	/******************************************************************************
 	BEGIN read in options and values, checking correctness and exiting if necessary
@@ -272,19 +290,42 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	/****************************************************************************
+	/******************************************************************************
 	END read in options and values, checking correctness and exiting if necessary
-	****************************************************************************/
+	******************************************************************************/
 
 
-	/*check that a CUDA capable device is present*/
+	/******************************************************************************
+	check that a CUDA capable device is present
+	******************************************************************************/
+	int n_devices = 0;
+
+	cudaGetDeviceCount(&n_devices);
+	if (cuda_error("cudaGetDeviceCount", false, __FILE__, __LINE__)) return -1;
+
+	for (int i = 0; i < n_devices; i++)
+	{
+		cudaDeviceProp prop;
+		cudaGetDeviceProperties(&prop, i);
+		if (cuda_error("cudaGetDeviceProperties", false, __FILE__, __LINE__)) return -1;
+
+		show_device_info(i, prop);
+		std::cout << "\n";
+	}
+
+	if (n_devices > 1)
+	{
+		std::cout << "More than one CUDA capable device detected. Defaulting to first device.\n\n";
+	}
 	cudaSetDevice(0);
 	if (cuda_error("cudaSetDevice", false, __FILE__, __LINE__)) return -1;
 
 
 	std::string fname;
 
-	/*read in parameter info and store necessary values*/
+	/******************************************************************************
+	read in parameter info and store necessary values
+	******************************************************************************/
 	if (infile_type == ".bin")
 	{
 		fname = infile_prefix + caustics_file + infile_type;
@@ -313,13 +354,15 @@ int main(int argc, char* argv[])
 	}
 	std::cout << "\n";
 
-	/*increase the number of pixels by 2^over_sample for initial sampling*/
+	/******************************************************************************
+	increase the number of pixels by 2^over_sample for initial sampling
+	******************************************************************************/
 	num_pixels <<= over_sample;
 
 
-	/**********************
+	/******************************************************************************
 	BEGIN memory allocation
-	**********************/
+	******************************************************************************/
 
 	std::cout << "Beginning memory allocation...\n";
 
@@ -328,35 +371,55 @@ int main(int argc, char* argv[])
 	Complex<dtype>* caustics = nullptr;
 	int* num_crossings = nullptr;
 
+	/******************************************************************************
+	allocate memory for caustic x positions
+	******************************************************************************/
 	cudaMallocManaged(&xpos, num_rows * num_cols * sizeof(dtype));
 	if (cuda_error("cudaMallocManaged(*xpos)", false, __FILE__, __LINE__)) return -1;
 
+	/******************************************************************************
+	allocate memory for caustic y positions
+	******************************************************************************/
 	cudaMallocManaged(&ypos, num_rows* num_cols * sizeof(dtype));
 	if (cuda_error("cudaMallocManaged(*ypos)", false, __FILE__, __LINE__)) return -1;
 
+	/******************************************************************************
+	allocate memory for complex caustic positions
+	******************************************************************************/
 	cudaMallocManaged(&caustics, num_rows* num_cols * sizeof(Complex<dtype>));
 	if (cuda_error("cudaMallocManaged(*caustics)", false, __FILE__, __LINE__)) return -1;
 
+	/******************************************************************************
+	allocate memory for pixels
+	******************************************************************************/
 	cudaMallocManaged(&num_crossings, num_pixels * num_pixels * sizeof(int));
 	if (cuda_error("cudaMallocManaged(*num_crossings)", false, __FILE__, __LINE__)) return -1;
 
 	std::cout << "Done allocating memory.\n\n";
 
-	/********************
+	/******************************************************************************
 	END memory allocation
-	********************/
+	******************************************************************************/
 
 
-	/*variables for kernel threads and blocks*/
+	/******************************************************************************
+	variables for kernel threads and blocks
+	******************************************************************************/
 	dim3 threads;
 	dim3 blocks;
 
-	/*number of threads per block, and number of blocks per grid
-	uses empirical values for maximum number of threads and blocks*/
+
+	/******************************************************************************
+	number of threads per block, and number of blocks per grid
+	uses empirical values for maximum number of threads and blocks
+	******************************************************************************/
 	set_threads(threads, 16, 16);
 	set_blocks(threads, blocks, num_rows, num_cols);
 
 
+	/******************************************************************************
+	read in caustic positions
+	******************************************************************************/
 	if (infile_type == ".bin")
 	{
 		fname = infile_prefix + caustics_file + infile_type;
@@ -390,7 +453,9 @@ int main(int argc, char* argv[])
 		}
 		std::cout << "Done reading caustic y positions from file " << fname << "\n";
 
-		/*copy values into caustic array*/
+		/******************************************************************************
+		copy values into caustic array
+		******************************************************************************/
 		std::cout << "Copying caustic x and y positions into complex array...\n";
 		copy_caustics_kernel<dtype> <<<blocks, threads>>> (xpos, ypos, caustics, num_rows, num_cols);
 		if (cuda_error("copy_caustics_kernel", true, __FILE__, __LINE__)) return -1;
@@ -399,50 +464,67 @@ int main(int argc, char* argv[])
 	std::cout << "\n";
 
 
-	/*redefine thread and block size to maximize parallelization*/
+	/******************************************************************************
+	redefine thread and block size to maximize parallelization
+	******************************************************************************/
 	set_threads(threads, 16, 16);
 	set_blocks(threads, blocks, num_pixels, num_pixels);
 
-	/*initialize pixel values*/
+	/******************************************************************************
+	initialize pixel values
+	******************************************************************************/
 	initialize_pixels_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
 	if (cuda_error("initialize_pixels_kernel", true, __FILE__, __LINE__)) return -1;
 
 
-	/*redefine thread and block size to maximize parallelization*/
+	/******************************************************************************
+	redefine thread and block size to maximize parallelization
+	******************************************************************************/
 	set_threads(threads, 16, 16);
 	set_blocks(threads, blocks, num_rows, num_cols);
 
-	/*start and end time for timing purposes*/
+
+	/******************************************************************************
+	start and end time for timing purposes
+	******************************************************************************/
 	std::chrono::high_resolution_clock::time_point starttime;
 	std::chrono::high_resolution_clock::time_point endtime;
 
-	std::cout << "\nCalculating number of caustic crossings...\n";
-	/*get current time at start of loop*/
+
+	/******************************************************************************
+	calculate number of caustic crossings and calculate time taken in seconds
+	******************************************************************************/
+	std::cout << "Calculating number of caustic crossings...\n";
 	starttime = std::chrono::high_resolution_clock::now();
 	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
 	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
-	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();
 	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
 	std::cout << "Done finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
 
 
+	/******************************************************************************
+	downsample number of caustic crossings and calculate time taken in seconds
+	******************************************************************************/
 	std::cout << "Downsampling number of caustic crossings...\n";
-	/*get current time at start of loop*/
 	starttime = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < over_sample; i++)
 	{
 		num_pixels >>= 1;
 
-		/*redefine thread and block size to maximize parallelization*/
+		/******************************************************************************
+		redefine thread and block size to maximize parallelization
+		******************************************************************************/
 		set_threads(threads, 16, 16);
 		set_blocks(threads, blocks, num_pixels, num_pixels);
 
 		reduce_pix_array_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
 		if (cuda_error("reduce_pix_array_kernel", true, __FILE__, __LINE__)) return -1;
 
-		/*redefine thread and block size to maximize parallelization*/
+		/******************************************************************************
+		redefine thread and block size to maximize parallelization
+		******************************************************************************/
 		set_threads(threads, 512);
 		set_blocks(threads, blocks, num_pixels);
 
@@ -457,15 +539,14 @@ int main(int argc, char* argv[])
 		if (cuda_error("shift_pix_kernel", true, __FILE__, __LINE__)) return -1;
 	}
 
-	/*get current time at end of loop, and calculate duration in milliseconds*/
 	endtime = std::chrono::high_resolution_clock::now();
 	double t_reduce = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
 	std::cout << "Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n\n";
 
 
-	/********************************
+	/******************************************************************************
 	create histograms of pixel values
-	********************************/
+	******************************************************************************/
 
 	int* min_num = nullptr;
 	int* max_num = nullptr;
@@ -486,7 +567,9 @@ int main(int argc, char* argv[])
 		*min_num = std::numeric_limits<int>::max();
 		*max_num = std::numeric_limits<int>::min();
 
-		/*redefine thread and block size to maximize parallelization*/
+		/******************************************************************************
+		redefine thread and block size to maximize parallelization
+		******************************************************************************/
 		set_threads(threads, 16, 16);
 		set_blocks(threads, blocks, num_pixels, num_pixels);
 
@@ -498,14 +581,18 @@ int main(int argc, char* argv[])
 		cudaMallocManaged(&histogram, histogram_length * sizeof(int));
 		if (cuda_error("cudaMallocManaged(*histogram)", false, __FILE__, __LINE__)) return -1;
 
-		/*redefine thread and block size to maximize parallelization*/
+		/******************************************************************************
+		redefine thread and block size to maximize parallelization
+		******************************************************************************/
 		set_threads(threads, 512);
 		set_blocks(threads, blocks, histogram_length);
 
 		initialize_histogram_kernel<dtype> <<<blocks, threads>>> (histogram, histogram_length);
 		if (cuda_error("initialize_histogram_kernel", true, __FILE__, __LINE__)) return -1;
 
-		/*redefine thread and block size to maximize parallelization*/
+		/******************************************************************************
+		redefine thread and block size to maximize parallelization
+		******************************************************************************/
 		set_threads(threads, 16, 16);
 		set_blocks(threads, blocks, num_pixels, num_pixels);
 
@@ -514,13 +601,15 @@ int main(int argc, char* argv[])
 
 		std::cout << "Done creating histograms.\n\n";
 	}
-	/***************************************
+	/******************************************************************************
 	done creating histograms of pixel values
-	***************************************/
+	******************************************************************************/
 
 
-	/*stream for writing output files
-	set precision to 9 digits*/
+	/******************************************************************************
+	stream for writing output files
+	set precision to 9 digits
+	******************************************************************************/
 	std::ofstream outfile;
 	outfile.precision(9);
 
@@ -540,7 +629,9 @@ int main(int argc, char* argv[])
 	std::cout << "Done writing parameter info to file " << fname << "\n\n";
 
 
-	/*histogram of number of caustic crossings map*/
+	/******************************************************************************
+	histogram of number of caustic crossings map
+	******************************************************************************/
 	if (write_histograms)
 	{
 		std::cout << "Writing number of caustic crossings histogram...\n";
@@ -554,9 +645,11 @@ int main(int argc, char* argv[])
 	}
 	
 
+	/******************************************************************************
+	write number of caustic crossings
+	******************************************************************************/
 	if (write_maps)
 	{
-		/*write number of caustic crossings*/
 		std::cout << "Writing number of caustic crossings...\n";
 		fname = outfile_prefix + "ncc_ncc" + outfile_type;
 		if (!write_array<int>(num_crossings, num_pixels, num_pixels, fname))

@@ -155,7 +155,6 @@ calculate the number of caustic crossings
 \param num -- array of number of caustic crossings
 \param npixels -- number of pixels per side for the square region
 ******************************************************************************/
-*************************************************/
 template <typename T>
 __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, double hl, int* num, int npixels)
 {
