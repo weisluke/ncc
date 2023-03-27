@@ -11,15 +11,15 @@
 #include <system_error>
 
 
-/***********************************************************
+/******************************************************************************
 read nrows and ncols parameters from file
 
 \param nrows -- number of rows in array
 \param ncols -- number of columns in array
 \param fname -- location of the file to read from
 
-\return bool -- true if file successfully read, false if not
-***********************************************************/
+\return bool -- true if file is successfully read, false if not
+******************************************************************************/
 template<typename T>
 bool read_params(int& nrows, int& ncols, const std::string& fname)
 {
@@ -90,7 +90,7 @@ bool read_params(int& nrows, int& ncols, const std::string& fname)
 	return true;
 }
 
-/***********************************************************
+/******************************************************************************
 read array of complex values from disk into array
 
 \param vals -- pointer to array of values
@@ -98,8 +98,8 @@ read array of complex values from disk into array
 \param ncols -- number of columns in array
 \param fname -- location of the .bin file to read from
 
-\return bool -- true if file successfully read, false if not
-***********************************************************/
+\return bool -- true if file is successfully read, false if not
+******************************************************************************/
 template <typename T>
 bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::string& fname)
 {
@@ -184,7 +184,7 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 	return true;
 }
 
-/***********************************************************
+/******************************************************************************
 read array of real values from disk into array
 
 \param vals -- pointer to array of values
@@ -192,8 +192,8 @@ read array of real values from disk into array
 \param ncols -- number of columns in array
 \param fname -- location of the .txt file to read from
 
-\return bool -- true if file successfully read, false if not
-***********************************************************/
+\return bool -- true if file is successfully read, false if not
+******************************************************************************/
 template <typename T>
 bool read_re_array(T* vals, int nrows, int ncols, const std::string& fname)
 {
@@ -225,7 +225,7 @@ bool read_re_array(T* vals, int nrows, int ncols, const std::string& fname)
 	return true;
 }
 
-/**************************************************************
+/******************************************************************************
 write array of values to disk
 
 \param vals -- pointer to array of values
@@ -233,8 +233,8 @@ write array of values to disk
 \param ncols -- number of columns in array
 \param fname -- location of the file to write to
 
-\return bool -- true if file successfully written, false if not
-**************************************************************/
+\return bool -- true if file is successfully written, false if not
+******************************************************************************/
 template <typename T>
 bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 {
@@ -286,7 +286,7 @@ bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 	return true;
 }
 
-/**************************************************************
+/******************************************************************************
 write histogram
 
 \param histogram -- pointer to histogram
@@ -295,7 +295,7 @@ write histogram
 \param fname -- location of the file to write to
 
 \return bool -- true if file successfully written, false if not
-**************************************************************/
+******************************************************************************/
 template <typename T>
 bool write_histogram(int* histogram, int n, int minnum, const std::string& fname)
 {
