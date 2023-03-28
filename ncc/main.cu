@@ -166,6 +166,7 @@ int main(int argc, char* argv[])
 	{
 		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
 		{
+			verbose = true;
 			i--;
 			continue;
 		}
@@ -191,7 +192,6 @@ int main(int argc, char* argv[])
 		******************************************************************************/
 		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
 		{
-			verbose = true;
 			i--;
 			continue;
 		}
