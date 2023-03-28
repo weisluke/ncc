@@ -25,10 +25,11 @@ using dtype = double;
 /******************************************************************************
 constants to be used
 ******************************************************************************/
-constexpr int OPTS_SIZE = 2 * 10;
+constexpr int OPTS_SIZE = 2 * 11;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
+	"-v", "--verbose",
 	"-ip", "--infile_prefix",
 	"-it", "--infile_type",
 	"-hl", "--half_length",
@@ -44,6 +45,7 @@ const std::string OPTS[OPTS_SIZE] =
 /******************************************************************************
 default input option values
 ******************************************************************************/
+bool verbose = false;
 std::string infile_prefix = "./";
 std::string infile_type = ".bin";
 dtype half_length = static_cast<dtype>(5);
@@ -84,6 +86,7 @@ void display_usage(char* name)
 		<< "                                                                               \n"
 		<< "Options:\n"
 		<< "  -h,--help               Show this help message\n"
+		<< "  -v,--verbose            Toggle verbose output. Takes no option value.\n"
 		<< "  -ip,--infile_prefix     Specify the prefix to be used when reading in files.\n"
 		<< "                          Default value: " << infile_prefix << "\n"
 		<< "  -it,--infile_type       Specify the type of input file to be used when\n"
@@ -143,8 +146,10 @@ int main(int argc, char* argv[])
 	if there are input options, but not an even number (since all options take a
 	parameter), display usage message and exit
 	subtract 1 to take into account that first argument array value is program name
+	account for possible verbose option, which is a toggle and takes no input
 	******************************************************************************/
-	if ((argc - 1) % 2 != 0)
+	if ((argc - 1) % 2 != 0 &&
+		!(cmd_option_exists(argv, argv + argc, "-v") || cmd_option_exists(argv, argv + argc, "--verbose")))
 	{
 		std::cerr << "Error. Invalid input syntax.\n";
 		display_usage(argv[0]);
@@ -155,9 +160,15 @@ int main(int argc, char* argv[])
 	check that all options given are valid. use step of 2 since all input options
 	take parameters (assumed to be given immediately after the option). start at 1,
 	since first array element, argv[0], is program name
+	account for possible verbose option, which is a toggle and takes no input
 	******************************************************************************/
 	for (int i = 1; i < argc; i += 2)
 	{
+		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
+		{
+			i--;
+			continue;
+		}
 		if (!cmd_option_valid(OPTS, OPTS + OPTS_SIZE, argv[i]))
 		{
 			std::cerr << "Error. Invalid input syntax. Unknown option " << argv[i] << "\n";
@@ -175,11 +186,25 @@ int main(int argc, char* argv[])
 
 	for (int i = 1; i < argc; i += 2)
 	{
+		/******************************************************************************
+		account for possible verbose option, which is a toggle and takes no input
+		******************************************************************************/
+		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
+		{
+			verbose = true;
+			i--;
+			continue;
+		}
+
 		cmdinput = cmd_option_value(argv, argv + argc, std::string(argv[i]));
 
 		if (argv[i] == std::string("-ip") || argv[i] == std::string("--infile_prefix"))
 		{
 			infile_prefix = cmdinput;
+			if (verbose)
+			{
+				std::cout << "infile_prefix set to: " << infile_prefix << "\n";
+			}
 		}
 		else if (argv[i] == std::string("-it") || argv[i] == std::string("--infile_type"))
 		{
@@ -188,6 +213,10 @@ int main(int argc, char* argv[])
 			{
 				std::cerr << "Error. Invalid infile_type. infile_type must be .bin or .txt\n";
 				return -1;
+			}
+			if (verbose)
+			{
+				std::cout << "infile_type set to: " << infile_type << "\n";
 			}
 		}
 		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
@@ -199,6 +228,10 @@ int main(int argc, char* argv[])
 				{
 					std::cerr << "Error. Invalid half_length input. half_length must be > " << std::numeric_limits<dtype>::min() << "\n";
 					return -1;
+				}
+				if (verbose)
+				{
+					std::cout << "half_length set to: " << half_length << "\n";
 				}
 			}
 			catch (...)
@@ -217,6 +250,10 @@ int main(int argc, char* argv[])
 					std::cerr << "Error. Invalid num_pixels input. num_pixels must be an integer > 0\n";
 					return -1;
 				}
+				if (verbose)
+				{
+					std::cout << "num_pixels set to: " << num_pixels << "\n";
+				}
 			}
 			catch (...)
 			{
@@ -233,6 +270,10 @@ int main(int argc, char* argv[])
 				{
 					std::cerr << "Error. Invalid over_sample input. over_sample must be an integer >= 0\n";
 					return -1;
+				}
+				if (verbose)
+				{
+					std::cout << "over_sample set to: " << over_sample << "\n";
 				}
 			}
 			catch (...)
@@ -251,6 +292,10 @@ int main(int argc, char* argv[])
 					std::cerr << "Error. Invalid write_maps input. write_maps must be 1 (true) or 0 (false).\n";
 					return -1;
 				}
+				if (verbose)
+				{
+					std::cout << "write_maps set to: " << write_maps << "\n";
+				}
 			}
 			catch (...)
 			{
@@ -268,6 +313,10 @@ int main(int argc, char* argv[])
 					std::cerr << "Error. Invalid write_histograms input. write_histograms must be 1 (true) or 0 (false).\n";
 					return -1;
 				}
+				if (verbose)
+				{
+					std::cout << "write_histograms set to: " << write_histograms << "\n";
+				}
 			}
 			catch (...)
 			{
@@ -283,12 +332,21 @@ int main(int argc, char* argv[])
 				std::cerr << "Error. Invalid outfile_type. outfile_type must be .bin or .txt\n";
 				return -1;
 			}
+			if (verbose)
+			{
+				std::cout << "outfile_type set to: " << outfile_type << "\n";
+			}
 		}
 		else if (argv[i] == std::string("-o") || argv[i] == std::string("--outfile_prefix"))
 		{
 			outfile_prefix = cmdinput;
+			if (verbose)
+			{
+				std::cout << "outfile_prefix set to: " << outfile_prefix << "\n";
+			}
 		}
 	}
+	std::cout << "\n";
 
 	/******************************************************************************
 	END read in options and values, checking correctness and exiting if necessary
@@ -303,14 +361,19 @@ int main(int argc, char* argv[])
 	cudaGetDeviceCount(&n_devices);
 	if (cuda_error("cudaGetDeviceCount", false, __FILE__, __LINE__)) return -1;
 
-	for (int i = 0; i < n_devices; i++)
+	if (verbose)
 	{
-		cudaDeviceProp prop;
-		cudaGetDeviceProperties(&prop, i);
-		if (cuda_error("cudaGetDeviceProperties", false, __FILE__, __LINE__)) return -1;
+		std::cout << "Available CUDA capable devices:\n\n";
 
-		show_device_info(i, prop);
-		std::cout << "\n";
+		for (int i = 0; i < n_devices; i++)
+		{
+			cudaDeviceProp prop;
+			cudaGetDeviceProperties(&prop, i);
+			if (cuda_error("cudaGetDeviceProperties", false, __FILE__, __LINE__)) return -1;
+
+			show_device_info(i, prop);
+			std::cout << "\n";
+		}
 	}
 
 	if (n_devices > 1)
@@ -473,8 +536,16 @@ int main(int argc, char* argv[])
 	/******************************************************************************
 	initialize pixel values
 	******************************************************************************/
+	if (verbose)
+	{
+		std::cout << "Initializing pixel values...\n";
+	}
 	initialize_pixels_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
 	if (cuda_error("initialize_pixels_kernel", true, __FILE__, __LINE__)) return -1;
+	if (verbose)
+	{
+		std::cout << "Done initializing pixel values.\n\n";
+	}
 
 
 	/******************************************************************************
