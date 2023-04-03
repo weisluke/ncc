@@ -209,6 +209,7 @@ int main(int argc, char* argv[])
 		else if (argv[i] == std::string("-it") || argv[i] == std::string("--infile_type"))
 		{
 			infile_type = cmdinput;
+			make_lowercase(infile_type);
 			if (infile_type != ".bin" && infile_type != ".txt")
 			{
 				std::cerr << "Error. Invalid infile_type. infile_type must be .bin or .txt\n";
@@ -327,6 +328,7 @@ int main(int argc, char* argv[])
 		else if (argv[i] == std::string("-ot") || argv[i] == std::string("--outfile_type"))
 		{
 			outfile_type = cmdinput;
+			make_lowercase(outfile_type);
 			if (outfile_type != ".bin" && outfile_type != ".txt")
 			{
 				std::cerr << "Error. Invalid outfile_type. outfile_type must be .bin or .txt\n";
