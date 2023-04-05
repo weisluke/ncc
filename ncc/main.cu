@@ -584,6 +584,10 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < over_sample; i++)
 	{
+		if (verbose)
+		{
+			std::cout << "Loop " << (i + 1) << " / " << over_sample << "\n";
+		}
 		num_pixels >>= 1;
 
 		/******************************************************************************
