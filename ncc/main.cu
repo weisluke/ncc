@@ -53,8 +53,8 @@ int num_pixels = 1000;
 int over_sample = 2;
 int write_maps = 1;
 int write_histograms = 1;
-std::string outfile_prefix = "./";
 std::string outfile_type = ".bin";
+std::string outfile_prefix = "./";
 
 /******************************************************************************
 default variable values
@@ -85,7 +85,7 @@ void display_usage(char* name)
 	std::cout
 		<< "                                                                               \n"
 		<< "Options:\n"
-		<< "  -h,--help               Show this help message\n"
+		<< "  -h,--help               Show this help message.\n"
 		<< "  -v,--verbose            Toggle verbose output. Takes no option value.\n"
 		<< "  -ip,--infile_prefix     Specify the prefix to be used when reading in files.\n"
 		<< "                          Default value: " << infile_prefix << "\n"
@@ -101,15 +101,15 @@ void display_usage(char* name)
 		<< "                          pixel array will initially be oversampled by a value\n"
 		<< "                          of 2^4 = 16 along both axes. This will require\n"
 		<< "                          16*16 = 256 times more memory. Default value: " << over_sample << "\n"
-		<< "  -wp,--write_maps        Specify whether to write the number of caustic\n"
-		<< "                          crossings map. Default value: " << write_maps << "\n"
-		<< "  -wh,--write_histograms  Specify whether to write the histogram (1)\n"
-		<< "                          or not (0). Default value: " << write_histograms << "\n"
+		<< "  -wp,--write_maps        Specify whether to write number of caustic crossings\n"
+		<< "                          maps (1) or not (0). Default value: " << write_maps << "\n"
+		<< "  -wh,--write_histograms  Specify whether to write histograms (1) or not (0).\n"
+		<< "                          Default value: " << write_histograms << "\n"
 		<< "  -ot,--outfile_type      Specify the type of file to be output. Valid options\n"
 		<< "                          are binary (.bin) or text (.txt). Default value: " << outfile_type << "\n"
-		<< "  -o,--outfile            Specify the prefix to be used in output file names.\n"
+		<< "  -o,--outfile_prefix     Specify the prefix to be used in output file names.\n"
 		<< "                          Default value: " << outfile_prefix << "\n"
-		<< "                          Lines of output files are whitespace delimited.\n"
+		<< "                          Lines of .txt output files are whitespace delimited.\n"
 		<< "                          Filenames are:\n"
 		<< "                            ncc_parameter_info  various parameter values used\n"
 		<< "                                                  in calculations\n"
@@ -121,7 +121,7 @@ void display_usage(char* name)
 		<< "                                                  and the second item is\n"
 		<< "                                                  num_pixels followed by the\n"
 		<< "                                                  number of caustic crossings\n"
-		<< "                                                  at the center of each pixel\n";
+		<< "                                                  for each pixel\n";
 }
 
 
