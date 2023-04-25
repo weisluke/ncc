@@ -101,7 +101,7 @@ void display_usage(char* name)
 		<< "                          pixel array will initially be oversampled by a value\n"
 		<< "                          of 2^4 = 16 along both axes. This will require\n"
 		<< "                          16*16 = 256 times more memory. Default value: " << over_sample << "\n"
-		<< "  -wp,--write_maps        Specify whether to write number of caustic crossings\n"
+		<< "  -wm,--write_maps        Specify whether to write number of caustic crossings\n"
 		<< "                          maps (1) or not (0). Default value: " << write_maps << "\n"
 		<< "  -wh,--write_histograms  Specify whether to write histograms (1) or not (0).\n"
 		<< "                          Default value: " << write_histograms << "\n"
