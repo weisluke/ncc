@@ -48,7 +48,7 @@ default input option values
 bool verbose = false;
 std::string infile_prefix = "./";
 std::string infile_type = ".bin";
-dtype half_length = static_cast<dtype>(5);
+dtype half_length = 5;
 int num_pixels = 1000;
 int over_sample = 2;
 int write_maps = 1;
@@ -200,39 +200,26 @@ int main(int argc, char* argv[])
 
 		if (argv[i] == std::string("-ip") || argv[i] == std::string("--infile_prefix"))
 		{
-			infile_prefix = cmdinput;
-			if (verbose)
-			{
-				std::cout << "infile_prefix set to: " << infile_prefix << "\n";
-			}
+			set_param("infile_prefix", infile_prefix, cmdinput, verbose);
 		}
 		else if (argv[i] == std::string("-it") || argv[i] == std::string("--infile_type"))
 		{
-			infile_type = cmdinput;
-			make_lowercase(infile_type);
+			set_param("infile_type", infile_type, make_lowercase(cmdinput), verbose);
 			if (infile_type != ".bin" && infile_type != ".txt")
 			{
 				std::cerr << "Error. Invalid infile_type. infile_type must be .bin or .txt\n";
 				return -1;
-			}
-			if (verbose)
-			{
-				std::cout << "infile_type set to: " << infile_type << "\n";
 			}
 		}
 		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
 		{
 			try
 			{
-				half_length = static_cast<dtype>(std::stod(cmdinput));
+				set_param("half_length", half_length, std::stod(cmdinput), verbose);
 				if (half_length < std::numeric_limits<dtype>::min())
 				{
 					std::cerr << "Error. Invalid half_length input. half_length must be > " << std::numeric_limits<dtype>::min() << "\n";
 					return -1;
-				}
-				if (verbose)
-				{
-					std::cout << "half_length set to: " << half_length << "\n";
 				}
 			}
 			catch (...)
@@ -245,15 +232,11 @@ int main(int argc, char* argv[])
 		{
 			try
 			{
-				num_pixels = std::stoi(cmdinput);
+				set_param("num_pixels", num_pixels, std::stoi(cmdinput), verbose);
 				if (num_pixels < 1)
 				{
 					std::cerr << "Error. Invalid num_pixels input. num_pixels must be an integer > 0\n";
 					return -1;
-				}
-				if (verbose)
-				{
-					std::cout << "num_pixels set to: " << num_pixels << "\n";
 				}
 			}
 			catch (...)
@@ -266,15 +249,11 @@ int main(int argc, char* argv[])
 		{
 			try
 			{
-				over_sample = std::stoi(cmdinput);
+				set_param("over_sample", over_sample, std::stoi(cmdinput), verbose);
 				if (over_sample < 0)
 				{
 					std::cerr << "Error. Invalid over_sample input. over_sample must be an integer >= 0\n";
 					return -1;
-				}
-				if (verbose)
-				{
-					std::cout << "over_sample set to: " << over_sample << "\n";
 				}
 			}
 			catch (...)
@@ -287,15 +266,11 @@ int main(int argc, char* argv[])
 		{
 			try
 			{
-				write_maps = std::stoi(cmdinput);
+				set_param("write_maps", write_maps, std::stoi(cmdinput), verbose);
 				if (write_maps != 0 && write_maps != 1)
 				{
 					std::cerr << "Error. Invalid write_maps input. write_maps must be 1 (true) or 0 (false).\n";
 					return -1;
-				}
-				if (verbose)
-				{
-					std::cout << "write_maps set to: " << write_maps << "\n";
 				}
 			}
 			catch (...)
@@ -308,15 +283,11 @@ int main(int argc, char* argv[])
 		{
 			try
 			{
-				write_histograms = std::stoi(cmdinput);
+				set_param("write_histograms", write_histograms, std::stoi(cmdinput), verbose);
 				if (write_histograms != 0 && write_histograms != 1)
 				{
 					std::cerr << "Error. Invalid write_histograms input. write_histograms must be 1 (true) or 0 (false).\n";
 					return -1;
-				}
-				if (verbose)
-				{
-					std::cout << "write_histograms set to: " << write_histograms << "\n";
 				}
 			}
 			catch (...)
@@ -327,27 +298,19 @@ int main(int argc, char* argv[])
 		}
 		else if (argv[i] == std::string("-ot") || argv[i] == std::string("--outfile_type"))
 		{
-			outfile_type = cmdinput;
-			make_lowercase(outfile_type);
+			set_param("outfile_type", outfile_type, make_lowercase(cmdinput), verbose);
 			if (outfile_type != ".bin" && outfile_type != ".txt")
 			{
 				std::cerr << "Error. Invalid outfile_type. outfile_type must be .bin or .txt\n";
 				return -1;
 			}
-			if (verbose)
-			{
-				std::cout << "outfile_type set to: " << outfile_type << "\n";
-			}
 		}
 		else if (argv[i] == std::string("-o") || argv[i] == std::string("--outfile_prefix"))
 		{
-			outfile_prefix = cmdinput;
-			if (verbose)
-			{
-				std::cout << "outfile_prefix set to: " << outfile_prefix << "\n";
-			}
+			set_param("outfile_prefix", outfile_prefix, cmdinput, verbose);
 		}
 	}
+
 	std::cout << "\n";
 
 	/******************************************************************************
@@ -560,19 +523,19 @@ int main(int argc, char* argv[])
 	/******************************************************************************
 	start and end time for timing purposes
 	******************************************************************************/
-	std::chrono::high_resolution_clock::time_point starttime;
-	std::chrono::high_resolution_clock::time_point endtime;
+	std::chrono::high_resolution_clock::time_point t_start;
+	std::chrono::high_resolution_clock::time_point t_end;
 
 
 	/******************************************************************************
 	calculate number of caustic crossings and calculate time taken in seconds
 	******************************************************************************/
 	std::cout << "Calculating number of caustic crossings...\n";
-	starttime = std::chrono::high_resolution_clock::now();
+	t_start = std::chrono::high_resolution_clock::now();
 	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
 	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
-	endtime = std::chrono::high_resolution_clock::now();
-	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
+	t_end = std::chrono::high_resolution_clock::now();
+	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count() / 1000.0;
 	std::cout << "Done finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
 
 
@@ -580,7 +543,7 @@ int main(int argc, char* argv[])
 	downsample number of caustic crossings and calculate time taken in seconds
 	******************************************************************************/
 	std::cout << "Downsampling number of caustic crossings...\n";
-	starttime = std::chrono::high_resolution_clock::now();
+	t_start = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < over_sample; i++)
 	{
@@ -616,8 +579,8 @@ int main(int argc, char* argv[])
 		if (cuda_error("shift_pix_kernel", true, __FILE__, __LINE__)) return -1;
 	}
 
-	endtime = std::chrono::high_resolution_clock::now();
-	double t_reduce = std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() / 1000.0;
+	t_end = std::chrono::high_resolution_clock::now();
+	double t_reduce = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count() / 1000.0;
 	std::cout << "Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n\n";
 
 
