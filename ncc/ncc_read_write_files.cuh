@@ -147,7 +147,7 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 			{
 				vals[i] = Complex<T>(temp_vals[i].re, temp_vals[i].im);
 			}
-			delete temp_vals;
+			delete[] temp_vals;
 			temp_vals = nullptr;
 		}
 		else if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<double>))
@@ -163,7 +163,7 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 			{
 				vals[i] = Complex<T>(temp_vals[i].re, temp_vals[i].im);
 			}
-			delete temp_vals;
+			delete[] temp_vals;
 			temp_vals = nullptr;
 		}
 		else

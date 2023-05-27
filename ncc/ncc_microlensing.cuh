@@ -15,9 +15,9 @@ return the sign of a number
 template <typename T>
 __device__ T sgn(T val)
 {
-	if (val < -0) return static_cast<T>(-1);
-	if (val > 0) return static_cast<T>(1);
-	return static_cast<T>(0);
+	if (val < -0) return -1;
+	if (val > 0) return 1;
+	return 0;
 }
 
 /******************************************************************************
@@ -139,10 +139,11 @@ calculate the pixel mapping of a point
 
 \return pixel position of point
 ******************************************************************************/
-template <typename T>
-__device__ Complex<T> point_to_pixel(Complex<T> p0, T hl, int npixels)
+template <typename T, typename U>
+__device__ Complex<T> point_to_pixel(Complex<U> p0, U hl, int npixels)
 {
-	return (p0 + hl * Complex<T>(1, 1)) * npixels / (2 * hl);
+	Complex<T> result((p0 + hl * Complex<T>(1, 1)) * npixels / (2 * hl));
+	return result;
 }
 
 /******************************************************************************
@@ -213,8 +214,8 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			/******************************************************************************
 			make complex pixel start and end positions
 			******************************************************************************/
-			Complex<T> pixpt0 = point_to_pixel(pt0, hl, npixels);
-			Complex<T> pixpt1 = point_to_pixel(pt1, hl, npixels);
+			Complex<T> pixpt0 = point_to_pixel<T, T>(pt0, hl, npixels);
+			Complex<T> pixpt1 = point_to_pixel<T, T>(pt1, hl, npixels);
 
 			/******************************************************************************
 			find starting and ending pixel positions including fractional parts
@@ -304,7 +305,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
-						atomicSub(&(num[ypix.im * npixels + l]), 1);
+						atomicSub(&num[ypix.im * npixels + l], 1);
 					}
 				}
 			}
@@ -343,7 +344,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
-						atomicAdd(&(num[ypix.im * npixels + l]), 1);
+						atomicAdd(&num[ypix.im * npixels + l], 1);
 					}
 				}
 			}
@@ -535,7 +536,7 @@ __global__ void histogram_kernel(int* pixels, int npixels, int minnum, int* hist
 	{
 		for (int j = y_index; j < npixels; j += y_stride)
 		{
-			atomicAdd(&(histogram[pixels[j * npixels + i] - minnum]), 1);
+			atomicAdd(&histogram[pixels[j * npixels + i] - minnum], 1);
 		}
 	}
 }
