@@ -9,6 +9,7 @@ Email: weisluke@alum.mit.edu
 #include "complex.cuh"
 #include "ncc_microlensing.cuh"
 #include "ncc_read_write_files.cuh"
+#include "stopwatch.cuh"
 #include "util.hpp"
 
 #include <algorithm>
@@ -349,8 +350,13 @@ int main(int argc, char* argv[])
 	if (cuda_error("cudaSetDevice", false, __FILE__, __LINE__)) return -1;
 
 
-	std::string fname;
+	/******************************************************************************
+	stopwatch for timing purposes
+	******************************************************************************/
+	Stopwatch stopwatch;
 
+
+	std::string fname;
 	/******************************************************************************
 	read in parameter info and store necessary values
 	******************************************************************************/
@@ -501,16 +507,10 @@ int main(int argc, char* argv[])
 	/******************************************************************************
 	initialize pixel values
 	******************************************************************************/
-	if (verbose)
-	{
-		std::cout << "Initializing pixel values...\n";
-	}
+	print_verbose("Initializing pixel values...\n", verbose);
 	initialize_pixels_kernel<dtype> <<<blocks, threads>>> (num_crossings, num_pixels);
 	if (cuda_error("initialize_pixels_kernel", true, __FILE__, __LINE__)) return -1;
-	if (verbose)
-	{
-		std::cout << "Done initializing pixel values.\n\n";
-	}
+	print_verbose("Done initializing pixel values.\n\n", verbose);
 
 
 	/******************************************************************************
@@ -521,21 +521,13 @@ int main(int argc, char* argv[])
 
 
 	/******************************************************************************
-	start and end time for timing purposes
-	******************************************************************************/
-	std::chrono::high_resolution_clock::time_point t_start;
-	std::chrono::high_resolution_clock::time_point t_end;
-
-
-	/******************************************************************************
 	calculate number of caustic crossings and calculate time taken in seconds
 	******************************************************************************/
 	std::cout << "Calculating number of caustic crossings...\n";
-	t_start = std::chrono::high_resolution_clock::now();
+	stopwatch.start();
 	find_num_caustic_crossings_kernel<dtype> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length, num_crossings, num_pixels);
 	if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return -1;
-	t_end = std::chrono::high_resolution_clock::now();
-	double t_ncc = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count() / 1000.0;
+	double t_ncc = stopwatch.stop();
 	std::cout << "Done finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
 
 
@@ -543,14 +535,11 @@ int main(int argc, char* argv[])
 	downsample number of caustic crossings and calculate time taken in seconds
 	******************************************************************************/
 	std::cout << "Downsampling number of caustic crossings...\n";
-	t_start = std::chrono::high_resolution_clock::now();
+	stopwatch.start();
 
 	for (int i = 0; i < over_sample; i++)
 	{
-		if (verbose)
-		{
-			std::cout << "Loop " << (i + 1) << " / " << over_sample << "\n";
-		}
+		print_verbose("Loop " + std::to_string(i + 1) + " / " + std::to_string(over_sample) + "\n", verbose);
 		num_pixels >>= 1;
 
 		/******************************************************************************
@@ -578,9 +567,7 @@ int main(int argc, char* argv[])
 		}
 		if (cuda_error("shift_pix_kernel", true, __FILE__, __LINE__)) return -1;
 	}
-
-	t_end = std::chrono::high_resolution_clock::now();
-	double t_reduce = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count() / 1000.0;
+	double t_reduce = stopwatch.stop();
 	std::cout << "Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n\n";
 
 

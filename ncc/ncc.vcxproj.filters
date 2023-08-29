@@ -21,6 +21,9 @@
     <ClInclude Include="ncc_read_write_files.cuh">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="stopwatch.cuh">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu">
