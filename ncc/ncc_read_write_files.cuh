@@ -185,47 +185,6 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 }
 
 /******************************************************************************
-read array of real values from disk into array
-
-\param vals -- pointer to array of values
-\param nrows -- number of rows in array
-\param ncols -- number of columns in array
-\param fname -- location of the .txt file to read from
-
-\return bool -- true if file is successfully read, false if not
-******************************************************************************/
-template <typename T>
-bool read_re_array(T* vals, int nrows, int ncols, const std::string& fname)
-{
-	std::filesystem::path fpath = fname;
-
-	std::ifstream infile;
-
-	if (fpath.extension() == ".txt")
-	{
-		infile.open(fname);
-
-		if (!infile.is_open())
-		{
-			std::cerr << "Error. Failed to open file " << fname << "\n";
-			return false;
-		}
-		for (int i = 0; i < nrows * ncols; i++)
-		{
-			infile >> vals[i];
-		}
-		infile.close();
-	}
-	else
-	{
-		std::cerr << "Error. File " << fname << " is not a .txt file.\n";
-		return false;
-	}
-
-	return true;
-}
-
-/******************************************************************************
 write array of values to disk
 
 \param vals -- pointer to array of values
@@ -294,7 +253,7 @@ write histogram
 \param minnum -- minimum number of crossings
 \param fname -- location of the file to write to
 
-\return bool -- true if file successfully written, false if not
+\return bool -- true if file is successfully written, false if not
 ******************************************************************************/
 template <typename T>
 bool write_histogram(int* histogram, int n, int minnum, const std::string& fname)
