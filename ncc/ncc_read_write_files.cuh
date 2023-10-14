@@ -30,37 +30,7 @@ bool read_params(int& nrows, int& ncols, const std::string& fname)
 
 	std::ifstream infile;
 
-	if (fpath.extension() == ".txt")
-	{
-		infile.open(fname);
-
-		if (!infile.is_open())
-		{
-			std::cerr << "Error. Failed to open file " << fname << "\n";
-			return false;
-		}
-
-		std::string input;
-		while (infile >> input)
-		{
-			if (input == "num_roots")
-			{
-				infile >> nrows;
-			}
-			if (input == "num_phi")
-			{
-				infile >> ncols;
-				ncols++;
-			}
-		}
-		infile.close();
-		if (nrows < 1 || ncols < 2)
-		{
-			std::cerr << "Error. File " << fname << " does not contain valid values for num_rows and num_cols.\n";
-			return false;
-		}
-	}
-	else if (fpath.extension() == ".bin")
+	if (fpath.extension() == ".bin")
 	{
 		infile.open(fname, std::ios_base::binary);
 
