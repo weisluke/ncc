@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ncc.cuh" />
     <ClInclude Include="ncc_functions.cuh" />
     <ClInclude Include="ncc_read_write_files.cuh" />
     <ClInclude Include="complex.cuh" />

@@ -6,22 +6,16 @@ Email: weisluke@alum.mit.edu
 ******************************************************************************/
 
 
-#include "complex.cuh"
-#include "ncc_functions.cuh"
-#include "ncc_read_write_files.cuh"
-#include "stopwatch.hpp"
+#include "ncc.cuh"
 #include "util.hpp"
 
-#include <algorithm>
 #include <iostream>
-#include <fstream>
-#include <chrono>
 #include <limits>
-#include <new>
 #include <string>
 
 
 using dtype = double;
+NCC<dtype> ncc;
 
 /******************************************************************************
 constants to be used
@@ -42,29 +36,10 @@ const std::string OPTS[OPTS_SIZE] =
 	"-o", "--outfile_prefix"
 };
 
-
 /******************************************************************************
 default input option values
 ******************************************************************************/
 bool verbose = false;
-std::string infile_prefix = "./";
-std::string infile_type = ".bin";
-dtype half_length = 5;
-int num_pixels = 1000;
-int over_sample = 2;
-int write_maps = 1;
-int write_histograms = 1;
-std::string outfile_type = ".bin";
-std::string outfile_prefix = "./";
-
-/******************************************************************************
-default variable values
-******************************************************************************/
-const std::string caustics_parameter_file = "ccf_parameter_info.txt";
-const std::string caustics_file = "ccf_caustics";
-
-int num_rows = 0;
-int num_cols = 0;
 
 
 
@@ -130,14 +105,9 @@ void display_usage(char* name)
 int main(int argc, char* argv[])
 {
 	/******************************************************************************
-	set precision for printing numbers to screen
-	******************************************************************************/
-	std::cout.precision(7);
-
-	/******************************************************************************
 	if help option has been input, display usage message
 	******************************************************************************/
-	if (cmd_option_exists(argv, argv + argc, std::string("-h")) || cmd_option_exists(argv, argv + argc, std::string("--help")))
+	if (cmd_option_exists(argv, argv + argc, "-h") || cmd_option_exists(argv, argv + argc, "--help"))
 	{
 		display_usage(argv[0]);
 		return -1;
