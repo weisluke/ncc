@@ -15,13 +15,13 @@
     <ClInclude Include="complex.cuh">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="ncc_microlensing.cuh">
+    <ClInclude Include="ncc_functions.cuh">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="ncc_read_write_files.cuh">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="stopwatch.cuh">
+    <ClInclude Include="stopwatch.hpp">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

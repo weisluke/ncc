@@ -11,10 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ncc_microlensing.cuh" />
+    <ClInclude Include="ncc_functions.cuh" />
     <ClInclude Include="ncc_read_write_files.cuh" />
     <ClInclude Include="complex.cuh" />
-    <ClInclude Include="stopwatch.cuh" />
+    <ClInclude Include="stopwatch.hpp" />
     <ClInclude Include="util.hpp" />
   </ItemGroup>
   <ItemGroup>

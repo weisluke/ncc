@@ -7,9 +7,9 @@ Email: weisluke@alum.mit.edu
 
 
 #include "complex.cuh"
-#include "ncc_microlensing.cuh"
+#include "ncc_functions.cuh"
 #include "ncc_read_write_files.cuh"
-#include "stopwatch.cuh"
+#include "stopwatch.hpp"
 #include "util.hpp"
 
 #include <algorithm>
