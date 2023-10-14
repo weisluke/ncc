@@ -201,27 +201,7 @@ bool write_array(T* vals, int nrows, int ncols, const std::string& fname)
 
 	std::ofstream outfile;
 
-	if (fpath.extension() == ".txt")
-	{
-		outfile.precision(9);
-		outfile.open(fname);
-
-		if (!outfile.is_open())
-		{
-			std::cerr << "Error. Failed to open file " << fname << "\n";
-			return false;
-		}
-		for (int i = 0; i < nrows; i++)
-		{
-			for (int j = 0; j < ncols; j++)
-			{
-				outfile << vals[i * ncols + j] << " ";
-			}
-			outfile << "\n";
-		}
-		outfile.close();
-	}
-	else if (fpath.extension() == ".bin")
+	if (fpath.extension() == ".bin")
 	{
 		outfile.open(fname, std::ios_base::binary);
 
