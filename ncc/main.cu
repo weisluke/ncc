@@ -20,7 +20,7 @@ NCC<dtype> ncc;
 /******************************************************************************
 constants to be used
 ******************************************************************************/
-constexpr int OPTS_SIZE = 2 * 10;
+constexpr int OPTS_SIZE = 2 * 9;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
@@ -31,7 +31,6 @@ const std::string OPTS[OPTS_SIZE] =
 	"-os", "--over_sample",
 	"-wm", "--write_maps",
 	"-wh", "--write_histograms",
-	"-ot", "--outfile_type",
 	"-o", "--outfile_prefix"
 };
 
@@ -78,8 +77,6 @@ void display_usage(char* name)
 		<< "                          maps (1) or not (0). Default value: " << ncc.write_maps << "\n"
 		<< "  -wh,--write_histograms  Specify whether to write histograms (1) or not (0).\n"
 		<< "                          Default value: " << ncc.write_histograms << "\n"
-		<< "  -ot,--outfile_type      Specify the type of file to be output. Valid options\n"
-		<< "                          are binary (.bin) or text (.txt). Default value: " << ncc.outfile_type << "\n"
 		<< "  -o,--outfile_prefix     Specify the prefix to be used in output file names.\n"
 		<< "                          Default value: " << ncc.outfile_prefix << "\n"
 		<< "                          Lines of .txt output files are whitespace delimited.\n"
@@ -252,15 +249,6 @@ int main(int argc, char* argv[])
 			catch (...)
 			{
 				std::cerr << "Error. Invalid write_histograms input.\n";
-				return -1;
-			}
-		}
-		else if (argv[i] == std::string("-ot") || argv[i] == std::string("--outfile_type"))
-		{
-			set_param("outfile_type", ncc.outfile_type, make_lowercase(cmdinput), verbose);
-			if (ncc.outfile_type != ".bin" && ncc.outfile_type != ".txt")
-			{
-				std::cerr << "Error. Invalid outfile_type. outfile_type must be .bin or .txt\n";
 				return -1;
 			}
 		}
