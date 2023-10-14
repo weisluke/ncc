@@ -559,7 +559,7 @@ read array of complex values from disk into array
 \return bool -- true if file is successfully read, false if not
 ******************************************************************************/
 template <typename T>
-bool read_complex_array(Complex<T>*& vals, int nrows, int ncols, const std::string& fname)
+bool read_complex_array(Complex<T>*& vals, int& nrows, int& ncols, const std::string& fname)
 {
 	std::filesystem::path fpath = fname;
 
