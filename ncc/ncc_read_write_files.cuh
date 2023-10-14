@@ -68,81 +68,79 @@ bool read_complex_array(Complex<T>* vals, int nrows, int ncols, const std::strin
 {
 	std::filesystem::path fpath = fname;
 
-	std::ifstream infile;
-
-	if (fpath.extension() == ".bin")
-	{
-		std::error_code err;
-		std::uintmax_t fsize = std::filesystem::file_size(fname, err);
-
-		if (err)
-		{
-			std::cerr << "Error determining size of input file " << fname << "\n";
-			return false;
-		}
-
-		infile.open(fname, std::ios_base::binary);
-
-		if (!infile.is_open())
-		{
-			std::cerr << "Error. Failed to open file " << fname << "\n";
-			return false;
-		}
-
-		int temp;
-		infile.read((char*)(&temp), sizeof(int));
-		infile.read((char*)(&temp), sizeof(int));
-
-		if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<T>))
-		{
-			infile.read((char*)vals, nrows * ncols * sizeof(Complex<T>));
-		}
-		else if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<float>))
-		{
-			Complex<float>* temp_vals = new (std::nothrow) Complex<float>[nrows * ncols];
-			if (!temp_vals)
-			{
-				std::cerr << "Error. Memory allocation for *temp_vals failed.\n";
-				return false;
-			}
-			infile.read((char*)temp_vals, nrows * ncols * sizeof(Complex<float>));
-			for (int i = 0; i < nrows * ncols; i++)
-			{
-				vals[i] = Complex<T>(temp_vals[i].re, temp_vals[i].im);
-			}
-			delete[] temp_vals;
-			temp_vals = nullptr;
-		}
-		else if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<double>))
-		{
-			Complex<double>* temp_vals = new (std::nothrow) Complex<double>[nrows * ncols];
-			if (!temp_vals)
-			{
-				std::cerr << "Error. Memory allocation for *temp_vals failed.\n";
-				return false;
-			}
-			infile.read((char*)temp_vals, nrows * ncols * sizeof(Complex<double>));
-			for (int i = 0; i < nrows * ncols; i++)
-			{
-				vals[i] = Complex<T>(temp_vals[i].re, temp_vals[i].im);
-			}
-			delete[] temp_vals;
-			temp_vals = nullptr;
-		}
-		else
-		{
-			std::cerr << "Error. Binary file does not contain valid single or double precision numbers.\n";
-			infile.close();
-			return false;
-		}
-
-		infile.close();
-	}
-	else
+	if (fpath.extension() != ".bin")
 	{
 		std::cerr << "Error. File " << fname << " is not a .bin file.\n";
 		return false;
 	}
+
+	std::ifstream infile;
+
+	std::error_code err;
+	std::uintmax_t fsize = std::filesystem::file_size(fname, err);
+
+	if (err)
+	{
+		std::cerr << "Error determining size of input file " << fname << "\n";
+		return false;
+	}
+
+	infile.open(fname, std::ios_base::binary);
+
+	if (!infile.is_open())
+	{
+		std::cerr << "Error. Failed to open file " << fname << "\n";
+		return false;
+	}
+
+	int temp;
+	infile.read((char*)(&temp), sizeof(int));
+	infile.read((char*)(&temp), sizeof(int));
+
+	if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<T>))
+	{
+		infile.read((char*)vals, nrows * ncols * sizeof(Complex<T>));
+	}
+	else if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<float>))
+	{
+		Complex<float>* temp_vals = new (std::nothrow) Complex<float>[nrows * ncols];
+		if (!temp_vals)
+		{
+			std::cerr << "Error. Memory allocation for *temp_vals failed.\n";
+			return false;
+		}
+		infile.read((char*)temp_vals, nrows * ncols * sizeof(Complex<float>));
+		for (int i = 0; i < nrows * ncols; i++)
+		{
+			vals[i] = Complex<T>(temp_vals[i].re, temp_vals[i].im);
+		}
+		delete[] temp_vals;
+		temp_vals = nullptr;
+	}
+	else if ((fsize - 2 * sizeof(int)) == nrows * ncols * sizeof(Complex<double>))
+	{
+		Complex<double>* temp_vals = new (std::nothrow) Complex<double>[nrows * ncols];
+		if (!temp_vals)
+		{
+			std::cerr << "Error. Memory allocation for *temp_vals failed.\n";
+			return false;
+		}
+		infile.read((char*)temp_vals, nrows * ncols * sizeof(Complex<double>));
+		for (int i = 0; i < nrows * ncols; i++)
+		{
+			vals[i] = Complex<T>(temp_vals[i].re, temp_vals[i].im);
+		}
+		delete[] temp_vals;
+		temp_vals = nullptr;
+	}
+	else
+	{
+		std::cerr << "Error. Binary file does not contain valid single or double precision numbers.\n";
+		infile.close();
+		return false;
+	}
+
+	infile.close();
 
 	return true;
 }
