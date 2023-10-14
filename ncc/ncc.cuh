@@ -17,6 +17,33 @@ class NCC
 {
 
 public:
+	/******************************************************************************
+	default input variables
+	******************************************************************************/
+	std::string infile_prefix = "./";
+	T half_length = static_cast<T>(5);
+	int num_pixels = 1000;
+	int over_sample = 2;
+	int write_maps = 1;
+	int write_histograms = 1;
+	std::string outfile_prefix = "./";
+
+
+	/******************************************************************************
+	class initializer is empty
+	******************************************************************************/
+	NCC()
+	{
+
+	}
+
+
+private:
+	/******************************************************************************
+	constant variables
+	******************************************************************************/
+	const std::string caustics_file = "ccf_caustics.bin";
+	const std::string outfile_type = ".bin";
 
 	/******************************************************************************
 	variables for kernel threads and blocks
@@ -31,21 +58,6 @@ public:
 	double t_elapsed;
 	double t_ncc;
 	double t_reduce;
-
-
-	/******************************************************************************
-	default variables
-	******************************************************************************/
-	std::string infile_prefix = "./";
-	T half_length = static_cast<T>(5);
-	int num_pixels = 1000;
-	int over_sample = 2;
-	int write_maps = 1;
-	int write_histograms = 1;
-	std::string outfile_type = ".bin";
-	std::string outfile_prefix = "./";
-
-	const std::string caustics_file = "ccf_caustics.bin";
 
 	/******************************************************************************
 	derived variables
@@ -64,14 +76,7 @@ public:
 	int histogram_length = 0;
 	int* histogram = nullptr;
 
-
-	NCC()
-	{
-
-	}
-
-
-private:
+	
 
 	bool read_caustics(bool verbose)
 	{
