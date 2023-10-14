@@ -78,20 +78,7 @@ void display_usage(char* name)
 		<< "  -wh,--write_histograms  Specify whether to write histograms (1) or not (0).\n"
 		<< "                          Default value: " << ncc.write_histograms << "\n"
 		<< "  -o,--outfile_prefix     Specify the prefix to be used in output file names.\n"
-		<< "                          Default value: " << ncc.outfile_prefix << "\n"
-		<< "                          Lines of .txt output files are whitespace delimited.\n"
-		<< "                          Filenames are:\n"
-		<< "                            ncc_parameter_info  various parameter values used\n"
-		<< "                                                  in calculations\n"
-		<< "                            ncc_ncc_numpixels   each line contains a number of\n"
-		<< "                                                  caustic crossings and the\n"
-		<< "                                                  number of pixels with that\n"
-		<< "                                                  many caustic crossings\n"
-		<< "                            ncc_ncc             the first item is num_pixels\n"
-		<< "                                                  and the second item is\n"
-		<< "                                                  num_pixels followed by the\n"
-		<< "                                                  number of caustic crossings\n"
-		<< "                                                  for each pixel\n";
+		<< "                          Default value: " << ncc.outfile_prefix << "\n";
 }
 
 
