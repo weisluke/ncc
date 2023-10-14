@@ -25,38 +25,31 @@ bool read_params(int& nrows, int& ncols, const std::string& fname)
 {
 	std::filesystem::path fpath = fname;
 
-	nrows = 0;
-	ncols = 0;
-
-	std::ifstream infile;
-
-	if (fpath.extension() == ".bin")
+	if (fpath.extension() != ".bin")
 	{
-		infile.open(fname, std::ios_base::binary);
-
-		if (!infile.is_open())
-		{
-			std::cerr << "Error. Failed to open file " << fname << "\n";
-			return false;
-		}
-
-		infile.read((char*)(&nrows), sizeof(int));
-		infile.read((char*)(&ncols), sizeof(int));
-		infile.close();
-		if (nrows < 1 || ncols < 2)
-		{
-			std::cerr << "Error. File " << fname << " does not contain valid values for num_rows and num_cols.\n";
-			return false;
-		}
-	}
-	else
-	{
-		std::cerr << "Error. File " << fname << " is not a .bin or .txt file.\n";
+		std::cerr << "Error. File " << fname << " is not a .bin file.\n";
 		return false;
 	}
 
-	std::cout << "num_rows: " << nrows << "\n";
-	std::cout << "num_cols: " << ncols << "\n";
+	std::ifstream infile;
+
+	infile.open(fname, std::ios_base::binary);
+
+	if (!infile.is_open())
+	{
+		std::cerr << "Error. Failed to open file " << fname << "\n";
+		return false;
+	}
+
+	infile.read((char*)(&nrows), sizeof(int));
+	infile.read((char*)(&ncols), sizeof(int));
+	infile.close();
+	if (nrows < 1 || ncols < 2)
+	{
+		std::cerr << "Error. File " << fname << " does not contain valid values for num_rows and num_cols.\n";
+		return false;
+	}
+
 	return true;
 }
 
