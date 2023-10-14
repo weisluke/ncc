@@ -20,13 +20,12 @@ NCC<dtype> ncc;
 /******************************************************************************
 constants to be used
 ******************************************************************************/
-constexpr int OPTS_SIZE = 2 * 11;
+constexpr int OPTS_SIZE = 2 * 10;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
 	"-v", "--verbose",
 	"-ip", "--infile_prefix",
-	"-it", "--infile_type",
 	"-hl", "--half_length",
 	"-px", "--pixels",
 	"-os", "--over_sample",
@@ -65,8 +64,6 @@ void display_usage(char* name)
 		<< "  -v,--verbose            Toggle verbose output. Takes no option value.\n"
 		<< "  -ip,--infile_prefix     Specify the prefix to be used when reading in files.\n"
 		<< "                          Default value: " << infile_prefix << "\n"
-		<< "  -it,--infile_type       Specify the type of input file to be used when\n"
-		<< "                          reading in files. Default value: " << infile_type << "\n"
 		<< "  -hl,--half_length       Specify the half-length of the square source plane\n"
 		<< "                          region to find the number of caustic crossings in.\n"
 		<< "                          Default value: " << half_length << "\n"
@@ -172,15 +169,6 @@ int main(int argc, char* argv[])
 		if (argv[i] == std::string("-ip") || argv[i] == std::string("--infile_prefix"))
 		{
 			set_param("infile_prefix", infile_prefix, cmdinput, verbose);
-		}
-		else if (argv[i] == std::string("-it") || argv[i] == std::string("--infile_type"))
-		{
-			set_param("infile_type", infile_type, make_lowercase(cmdinput), verbose);
-			if (infile_type != ".bin" && infile_type != ".txt")
-			{
-				std::cerr << "Error. Invalid infile_type. infile_type must be .bin or .txt\n";
-				return -1;
-			}
 		}
 		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
 		{
