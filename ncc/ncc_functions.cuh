@@ -360,33 +360,6 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 }
 
 /******************************************************************************
-copy caustic x and y positions to single complex array
-
-\param xpos -- pointer to array of caustic x positions
-\param ypos -- pointer to array of caustic y positions
-\param caustics -- pointer to array of complex caustic positions
-\param nrows -- number of rows in the caustic array
-\param ncols -- number of columns in the caustic array
-******************************************************************************/
-template <typename T>
-__global__ void copy_caustics_kernel(T* xpos, T* ypos, Complex<T>* caustics, int nrows, int ncols)
-{
-	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
-	int x_stride = blockDim.x * gridDim.x;
-
-	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
-	int y_stride = blockDim.y * gridDim.y;
-
-	for (int i = x_index; i < nrows; i += x_stride)
-	{
-		for (int j = y_index; j < ncols; j += y_stride)
-		{
-			caustics[i * ncols + j] = Complex<T>(xpos[i * ncols + j], ypos[i * ncols + j]);
-		}
-	}
-}
-
-/******************************************************************************
 initialize array of pixels to 0
 
 \param pixels -- pointer to array of pixels
