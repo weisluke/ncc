@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "complex.cuh"
-#include "util.hpp"
+#include "util.cuh"
 
 #include <cstdint> //for std::uintmax_t
 #include <filesystem>

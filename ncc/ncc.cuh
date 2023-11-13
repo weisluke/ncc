@@ -3,7 +3,7 @@
 #include "complex.cuh"
 #include "ncc_functions.cuh"
 #include "stopwatch.hpp"
-#include "util.hpp"
+#include "util.cuh"
 
 #include <chrono> //for setting random seed with clock
 #include <fstream> //for writing files

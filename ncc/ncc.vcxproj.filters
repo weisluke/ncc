@@ -9,7 +9,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="util.hpp">
+    <ClInclude Include="util.cuh">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="complex.cuh">

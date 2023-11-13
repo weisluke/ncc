@@ -15,7 +15,7 @@
     <ClInclude Include="ncc_functions.cuh" />
     <ClInclude Include="complex.cuh" />
     <ClInclude Include="stopwatch.hpp" />
-    <ClInclude Include="util.hpp" />
+    <ClInclude Include="util.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
