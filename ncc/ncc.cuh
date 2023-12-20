@@ -78,6 +78,47 @@ private:
 
 	
 
+	bool check_input_params(bool verbose)
+	{
+		std::cout << "Checking input parameters...\n";
+
+		
+		if (half_length < std::numeric_limits<T>::min())
+		{
+			std::cerr << "Error. half_length must be >= " << std::numeric_limits<T>::min() << "\n";
+			return false;
+		}
+
+		if (num_pixels < 1)
+		{
+			std::cerr << "Error. num_pixels must be an integer > 0\n";
+			return false;
+		}
+
+		if (over_sample < 0)
+		{
+			std::cerr << "Error. over_sample must be an integer >= 0\n";
+			return false;
+		}
+
+		if (write_maps != 0 && write_maps != 1)
+		{
+			std::cerr << "Error. write_maps must be 1 (true) or 0 (false).\n";
+			return false;
+		}
+
+		if (write_histograms != 0 && write_histograms != 1)
+		{
+			std::cerr << "Error. write_histograms must be 1 (true) or 0 (false).\n";
+			return false;
+		}
+
+
+		std::cout << "Done checking input parameters.\n\n";
+		
+		return true;
+	}
+	
 	bool read_caustics(bool verbose)
 	{
 		std::cout << "Reading in caustics...\n";
@@ -310,6 +351,7 @@ public:
 
 	bool run(bool verbose)
 	{
+		if (!check_input_params(verbose)) return false;
 		if (!read_caustics(verbose)) return false;
 		if (!allocate_initialize_memory(verbose)) return false;
 		if (!calculate_num_caustic_crossings(verbose)) return false;

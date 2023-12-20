@@ -10,7 +10,6 @@ Email: weisluke@alum.mit.edu
 #include "util.cuh"
 
 #include <iostream>
-#include <limits> //for std::numeric_limits
 #include <string>
 
 
@@ -159,11 +158,6 @@ int main(int argc, char* argv[])
 			try
 			{
 				set_param("half_length", ncc.half_length, std::stod(cmdinput), verbose);
-				if (ncc.half_length < std::numeric_limits<dtype>::min())
-				{
-					std::cerr << "Error. Invalid half_length input. half_length must be >= " << std::numeric_limits<dtype>::min() << "\n";
-					return -1;
-				}
 			}
 			catch (...)
 			{
@@ -176,11 +170,6 @@ int main(int argc, char* argv[])
 			try
 			{
 				set_param("num_pixels", ncc.num_pixels, std::stoi(cmdinput), verbose);
-				if (ncc.num_pixels < 1)
-				{
-					std::cerr << "Error. Invalid num_pixels input. num_pixels must be an integer > 0\n";
-					return -1;
-				}
 			}
 			catch (...)
 			{
@@ -193,11 +182,6 @@ int main(int argc, char* argv[])
 			try
 			{
 				set_param("over_sample", ncc.over_sample, std::stoi(cmdinput), verbose);
-				if (ncc.over_sample < 0)
-				{
-					std::cerr << "Error. Invalid over_sample input. over_sample must be an integer >= 0\n";
-					return -1;
-				}
 			}
 			catch (...)
 			{
@@ -210,11 +194,6 @@ int main(int argc, char* argv[])
 			try
 			{
 				set_param("write_maps", ncc.write_maps, std::stoi(cmdinput), verbose);
-				if (ncc.write_maps != 0 && ncc.write_maps != 1)
-				{
-					std::cerr << "Error. Invalid write_maps input. write_maps must be 1 (true) or 0 (false).\n";
-					return -1;
-				}
 			}
 			catch (...)
 			{
@@ -227,11 +206,6 @@ int main(int argc, char* argv[])
 			try
 			{
 				set_param("write_histograms", ncc.write_histograms, std::stoi(cmdinput), verbose);
-				if (ncc.write_histograms != 0 && ncc.write_histograms != 1)
-				{
-					std::cerr << "Error. Invalid write_histograms input. write_histograms must be 1 (true) or 0 (false).\n";
-					return -1;
-				}
 			}
 			catch (...)
 			{
