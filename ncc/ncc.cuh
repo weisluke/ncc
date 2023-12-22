@@ -172,8 +172,8 @@ private:
 		std::cout << "Initializing pixel values...\n";
 		stopwatch.start();
 
-		initialize_pixels_kernel<T> <<<blocks, threads>>> (num_crossings, num_pixels);
-		if (cuda_error("initialize_pixels_kernel", true, __FILE__, __LINE__)) return false;
+		initialize_array_kernel<T> <<<blocks, threads>>> (num_crossings, num_pixels, num_pixels);
+		if (cuda_error("initialize_array_kernel", true, __FILE__, __LINE__)) return false;
 
 		t_elapsed = stopwatch.stop();
 		std::cout << "Done initializing pixel values. Elapsed time: " << t_elapsed << " seconds.\n\n";
@@ -266,8 +266,8 @@ private:
 			set_threads(threads, 512);
 			set_blocks(threads, blocks, histogram_length);
 
-			initialize_histogram_kernel<T> <<<blocks, threads>>> (histogram, histogram_length);
-			if (cuda_error("initialize_histogram_kernel", true, __FILE__, __LINE__)) return false;
+			initialize_array_kernel<T> <<<blocks, threads>>> (histogram, 1, histogram_length);
+			if (cuda_error("initialize_array_kernel", true, __FILE__, __LINE__)) return false;
 
 			set_threads(threads, 16, 16);
 			set_blocks(threads, blocks, num_pixels, num_pixels);

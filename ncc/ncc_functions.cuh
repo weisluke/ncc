@@ -360,13 +360,14 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 }
 
 /******************************************************************************
-initialize array of pixels to 0
+initialize array of values to 0
 
-\param pixels -- pointer to array of pixels
-\param npixels -- number of pixels per side for the square region
+\param vals -- pointer to array of values
+\param nrows -- number of rows in array
+\param ncols -- number of columns in array
 ******************************************************************************/
 template <typename T>
-__global__ void initialize_pixels_kernel(int* pixels, int npixels)
+__global__ void initialize_array_kernel(int* vals, int nrows, int ncols)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -374,11 +375,11 @@ __global__ void initialize_pixels_kernel(int* pixels, int npixels)
 	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
 	int y_stride = blockDim.y * gridDim.y;
 
-	for (int i = x_index; i < npixels; i += x_stride)
+	for (int i = x_index; i < ncols; i += x_stride)
 	{
-		for (int j = y_index; j < npixels; j += y_stride)
+		for (int j = y_index; j < nrows; j += y_stride)
 		{
-			pixels[j * npixels + i] = 0;
+			vals[j * ncols + i] = 0;
 		}
 	}
 }
@@ -474,24 +475,6 @@ __global__ void histogram_min_max_kernel(int* pixels, int npixels, int* minnum, 
 			atomicMin(minnum, pixels[j * npixels + i]);
 			atomicMax(maxnum, pixels[j * npixels + i]);
 		}
-	}
-}
-
-/******************************************************************************
-initialize histogram values to 0
-
-\param histogram -- pointer to histogram
-\param n -- length of histogram
-******************************************************************************/
-template <typename T>
-__global__ void initialize_histogram_kernel(int* histogram, int n)
-{
-	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
-	int x_stride = blockDim.x * gridDim.x;
-
-	for (int i = x_index; i < n; i += x_stride)
-	{
-		histogram[i] = 0;
 	}
 }
 
