@@ -19,12 +19,14 @@ NCC<dtype> ncc;
 /******************************************************************************
 constants to be used
 ******************************************************************************/
-constexpr int OPTS_SIZE = 2 * 9;
+constexpr int OPTS_SIZE = 2 * 11;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
 	"-v", "--verbose",
 	"-ip", "--infile_prefix",
+	"-cy1", "--center_y1",
+	"-cy2", "--center_y2",
 	"-hl", "--half_length",
 	"-px", "--pixels",
 	"-os", "--over_sample",
@@ -62,6 +64,10 @@ void display_usage(char* name)
 		<< "  -v,--verbose            Toggle verbose output. Takes no option value.\n"
 		<< "  -ip,--infile_prefix     Specify the prefix to be used when reading in files.\n"
 		<< "                          Default value: " << ncc.infile_prefix << "\n"
+		<< "  -cy1, --center_y1       Specify the y1 position of the center of the\n"
+		<< "                          number of caustic crossings map. Default value: " << ncc.center_y.re << "\n"
+		<< "  -cy2, --center_y2       Specify the y2 position of the center of the\n"
+		<< "                          number of caustic crossings map. Default value: " << ncc.center_y.im << "\n"
 		<< "  -hl,--half_length       Specify the half-length of the square source plane\n"
 		<< "                          region to find the number of caustic crossings in.\n"
 		<< "                          Default value: " << ncc.half_length << "\n"
@@ -152,6 +158,30 @@ int main(int argc, char* argv[])
 		if (argv[i] == std::string("-ip") || argv[i] == std::string("--infile_prefix"))
 		{
 			set_param("infile_prefix", ncc.infile_prefix, cmdinput, verbose);
+		}
+		else if (argv[i] == std::string("-cy1") || argv[i] == std::string("--center_y1"))
+		{
+			try
+			{
+				set_param("center_y1", ncc.center_y.re, std::stod(cmdinput), verbose);
+			}
+			catch (...)
+			{
+				std::cerr << "Error. Invalid center_y1 input.\n";
+				return -1;
+			}
+		}
+		else if (argv[i] == std::string("-cy2") || argv[i] == std::string("--center_y2"))
+		{
+			try
+			{
+				set_param("center_y2", ncc.center_y.im, std::stod(cmdinput), verbose);
+			}
+			catch (...)
+			{
+				std::cerr << "Error. Invalid center_y2 input.\n";
+				return -1;
+			}
 		}
 		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
 		{

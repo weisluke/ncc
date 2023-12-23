@@ -21,6 +21,7 @@ public:
 	default input variables
 	******************************************************************************/
 	std::string infile_prefix = "./";
+	Complex<T> center_y = Complex<T>();
 	T half_length = static_cast<T>(5);
 	int num_pixels = 1000;
 	int over_sample = 2;
@@ -140,6 +141,15 @@ private:
 
 		t_elapsed = stopwatch.stop();
 		std::cout << "Done reading in caustics. Elapsed time: " << t_elapsed << " seconds.\n\n";
+
+		print_verbose("Recentering caustics...\n", verbose);
+
+		set_threads(threads, 16, 16);
+		set_blocks(threads, blocks, num_rows, num_cols);
+		recenter_caustics_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, center_y);
+		if (cuda_error("recenter_caustics_kernel", true, __FILE__, __LINE__)) return false;
+
+		print_verbose("Done recentering caustics.\n\n", verbose);
 
 		return true;
 	}
@@ -303,6 +313,8 @@ private:
 			std::cerr << "Error. Failed to open file " << fname << "\n";
 			return false;
 		}
+		outfile << "center_y1" << center_y.re << "\n";
+		outfile << "center_y2" << center_y.im << "\n";
 		outfile << "half_length " << half_length << "\n";
 		outfile << "num_pixels " << num_pixels << "\n";
 		outfile << "over_sample " << over_sample << "\n";

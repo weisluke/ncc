@@ -360,6 +360,32 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 }
 
 /******************************************************************************
+recenter the caustics relative to the given center
+
+\param caustics -- array of caustic positions
+\param nrows -- number of rows in array
+\param ncols -- number of columns in array
+\param center_y -- center of the source plane receiving region
+******************************************************************************/
+template <typename T>
+__global__ void recenter_caustics_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> center_y)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
+	int y_stride = blockDim.y * gridDim.y;
+
+	for (int i = x_index; i < ncols; i += x_stride)
+	{
+		for (int j = y_index; j < nrows; j += y_stride)
+		{
+			caustics[j * ncols + i] -= center_y;
+		}
+	}
+}
+
+/******************************************************************************
 initialize array of values to 0
 
 \param vals -- pointer to array of values
