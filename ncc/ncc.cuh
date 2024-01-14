@@ -5,6 +5,10 @@
 #include "stopwatch.hpp"
 #include "util.cuh"
 
+#include <thrust/execution_policy.h> //for thrust::device
+#include <thrust/extrema.h> // for thrust::min_element, thrust::max_element
+#include <thrust/reduce.h> // for thrust::reduce
+
 #include <chrono> //for setting random seed with clock
 #include <fstream> //for writing files
 #include <iostream>
@@ -72,8 +76,8 @@ private:
 	Complex<T>* caustics = nullptr;
 	int* num_crossings = nullptr;
 
-	int* min_num = nullptr;
-	int* max_num = nullptr;
+	int min_num = std::numeric_limits<int>::max();
+	int max_num = 0;
 	int histogram_length = 0;
 	int* histogram = nullptr;
 
@@ -253,22 +257,12 @@ private:
 		if (write_histograms)
 		{
 			std::cout << "Creating histograms...\n";
+			stopwatch.start();
 
-			cudaMallocManaged(&min_num, sizeof(int));
-			if (cuda_error("cudaMallocManaged(*min_rays)", false, __FILE__, __LINE__)) return false;
-			cudaMallocManaged(&max_num, sizeof(int));
-			if (cuda_error("cudaMallocManaged(*max_rays)", false, __FILE__, __LINE__)) return false;
+			min_num = *thrust::min_element(thrust::device, num_crossings, num_crossings + num_pixels * num_pixels);
+			max_num = *thrust::max_element(thrust::device, num_crossings, num_crossings + num_pixels * num_pixels);
 
-			*min_num = std::numeric_limits<int>::max();
-			*max_num = std::numeric_limits<int>::min();
-
-			set_threads(threads, 16, 16);
-			set_blocks(threads, blocks, num_pixels, num_pixels);
-
-			histogram_min_max_kernel<T> <<<blocks, threads>>> (num_crossings, num_pixels, min_num, max_num);
-			if (cuda_error("histogram_min_max_kernel", true, __FILE__, __LINE__)) return false;
-
-			histogram_length = *max_num - *min_num + 1;
+			histogram_length = max_num - min_num + 1;
 
 			cudaMallocManaged(&histogram, histogram_length * sizeof(int));
 			if (cuda_error("cudaMallocManaged(*histogram)", false, __FILE__, __LINE__)) return false;
@@ -282,10 +276,11 @@ private:
 			set_threads(threads, 16, 16);
 			set_blocks(threads, blocks, num_pixels, num_pixels);
 
-			histogram_kernel<T> <<<blocks, threads>>> (num_crossings, num_pixels, *min_num, histogram);
+			histogram_kernel<T> <<<blocks, threads>>> (num_crossings, num_pixels, min_num, histogram);
 			if (cuda_error("histogram_kernel", true, __FILE__, __LINE__)) return false;
 
-			std::cout << "Done creating histograms.\n\n";
+			t_elapsed = stopwatch.stop();
+			std::cout << "Done creating histograms. Elapsed time: " << t_elapsed << " seconds.\n\n";
 		}
 
 		/******************************************************************************
@@ -331,7 +326,7 @@ private:
 		{
 			std::cout << "Writing number of caustic crossings histogram...\n";
 			fname = outfile_prefix + "ncc_ncc_numpixels.txt";
-			if (!write_histogram<T>(histogram, histogram_length, *min_num, fname))
+			if (!write_histogram<T>(histogram, histogram_length, min_num, fname))
 			{
 				std::cerr << "Error. Unable to write caustic crossings histogram to file " << fname << "\n";
 				return false;
