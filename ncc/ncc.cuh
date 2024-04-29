@@ -1,5 +1,6 @@
 #pragma once
 
+#include "array_functions.cuh"
 #include "complex.cuh"
 #include "ncc_functions.cuh"
 #include "stopwatch.hpp"
