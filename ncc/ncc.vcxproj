@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="array_functions.cuh" />
     <ClInclude Include="ncc.cuh" />
     <ClInclude Include="ncc_functions.cuh" />
     <ClInclude Include="complex.cuh" />

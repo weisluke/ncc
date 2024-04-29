@@ -24,6 +24,9 @@
     <ClInclude Include="ncc.cuh">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="array_functions.cuh">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu">
