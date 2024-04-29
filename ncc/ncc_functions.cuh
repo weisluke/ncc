@@ -376,7 +376,7 @@ reduce the pixel array
 \param npixels -- number of pixels per side for the square region
 ******************************************************************************/
 template <typename T>
-__global__ void reduce_pix_array_kernel(int* num, int npixels)
+__global__ void reduce_pix_array_kernel(int* num, Complex<int> npixels)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -384,16 +384,16 @@ __global__ void reduce_pix_array_kernel(int* num, int npixels)
 	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
 	int y_stride = blockDim.y * gridDim.y;
 
-	for (int i = x_index; i < npixels; i += x_stride)
+	for (int i = x_index; i < npixels.re; i += x_stride)
 	{
-		for (int j = y_index; j < npixels; j += y_stride)
+		for (int j = y_index; j < npixels.im; j += y_stride)
 		{
-			int n1 = num[2 * j * 2 * npixels + 2 * i];
-			int n2 = num[2 * j * 2 * npixels + 2 * i + 1];
-			int n3 = num[(2 * j + 1) * 2 * npixels + 2 * i];
-			int n4 = num[(2 * j + 1) * 2 * npixels + 2 * i + 1];
+			int n1 = num[2 * j * 2 * npixels.re + 2 * i];
+			int n2 = num[2 * j * 2 * npixels.re + 2 * i + 1];
+			int n3 = num[(2 * j + 1) * 2 * npixels.re + 2 * i];
+			int n4 = num[(2 * j + 1) * 2 * npixels.re + 2 * i + 1];
 
-			num[2 * j * 2 * npixels + 2 * i] = max(max(n1, n2), max(n3, n4));
+			num[2 * j * 2 * npixels.re + 2 * i] = max(max(n1, n2), max(n3, n4));
 		}
 	}
 }
@@ -406,14 +406,14 @@ shift the provided pixel column from 2*i to i
 \param column -- the column to shift to
 ******************************************************************************/
 template <typename T>
-__global__ void shift_pix_column_kernel(int* num, int npixels, int column)
+__global__ void shift_pix_column_kernel(int* num, Complex<int> npixels, int column)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
 
-	for (int i = x_index; i < npixels; i += x_stride)
+	for (int i = x_index; i < npixels.im; i += x_stride)
 	{
-		num[2 * i * 2 * npixels + column] = num[2 * i * 2 * npixels + 2 * column];
+		num[2 * i * 2 * npixels.re + column] = num[2 * i * 2 * npixels.re + 2 * column];
 	}
 }
 
@@ -425,14 +425,14 @@ shift the provided pixel row from 2*i to i
 \param row -- the row to shift to
 ******************************************************************************/
 template <typename T>
-__global__ void shift_pix_row_kernel(int* num, int npixels, int row)
+__global__ void shift_pix_row_kernel(int* num, Complex<int> npixels, int row)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
 
-	for (int i = x_index; i < npixels; i += x_stride)
+	for (int i = x_index; i < npixels.re; i += x_stride)
 	{
-		num[row * npixels + i] = num[2 * row * 2 * npixels + i];
+		num[row * npixels.re + i] = num[2 * row * 2 * npixels.re + i];
 	}
 }
 
