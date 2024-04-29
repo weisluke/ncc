@@ -52,7 +52,7 @@ private:
 	const std::string outfile_type = ".bin";
 
 	/******************************************************************************
-	variables for kernel threads and blocks
+	variables for cuda device, kernel threads, and kernel blocks
 	******************************************************************************/
 	cudaDeviceProp cuda_device_prop;
 	dim3 threads;
