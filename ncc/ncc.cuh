@@ -26,8 +26,8 @@ public:
 	******************************************************************************/
 	std::string infile_prefix = "./";
 	Complex<T> center_y = Complex<T>();
-	T half_length = static_cast<T>(5);
-	int num_pixels = 1000;
+	Complex<T> half_length_y = Complex<T>(5, 5);
+	Complex<int> num_pixels_y = Complex<int>(1000, 1000);
 	int over_sample = 2;
 	int write_maps = 1;
 	int write_histograms = 1;

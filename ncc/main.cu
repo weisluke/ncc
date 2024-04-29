@@ -19,7 +19,7 @@ NCC<dtype> ncc;
 /******************************************************************************
 constants to be used
 ******************************************************************************/
-constexpr int OPTS_SIZE = 2 * 11;
+constexpr int OPTS_SIZE = 2 * 13;
 const std::string OPTS[OPTS_SIZE] =
 {
 	"-h", "--help",
@@ -27,8 +27,10 @@ const std::string OPTS[OPTS_SIZE] =
 	"-ip", "--infile_prefix",
 	"-cy1", "--center_y1",
 	"-cy2", "--center_y2",
-	"-hl", "--half_length",
-	"-px", "--pixels",
+	"-hly1", "--half_length_y1",
+	"-hly2", "--half_length_y2",
+	"-npy1", "--num_pixels_y1",
+	"-npy2", "--num_pixels_y2",
 	"-os", "--over_sample",
 	"-wm", "--write_maps",
 	"-wh", "--write_histograms",
@@ -60,30 +62,30 @@ void display_usage(char* name)
 	std::cout
 		<< "                                                                               \n"
 		<< "Options:\n"
-		<< "  -h,--help               Show this help message.\n"
-		<< "  -v,--verbose            Toggle verbose output. Takes no option value.\n"
-		<< "  -ip,--infile_prefix     Specify the prefix to be used when reading in files.\n"
-		<< "                          Default value: " << ncc.infile_prefix << "\n"
-		<< "  -cy1, --center_y1       Specify the y1 position of the center of the\n"
-		<< "                          number of caustic crossings map. Default value: " << ncc.center_y.re << "\n"
-		<< "  -cy2, --center_y2       Specify the y2 position of the center of the\n"
-		<< "                          number of caustic crossings map. Default value: " << ncc.center_y.im << "\n"
-		<< "  -hl,--half_length       Specify the half-length of the square source plane\n"
-		<< "                          region to find the number of caustic crossings in.\n"
-		<< "                          Default value: " << ncc.half_length << "\n"
-		<< "  -px,--pixels            Specify the number of pixels per side for the number\n"
-		<< "                          of caustic crossings map. Default value: " << ncc.num_pixels << "\n"
-		<< "  -os,--over_sample       Specify the power of 2 by which to oversample the\n"
-		<< "                          final pixels. E.g., an input of 4 means the final\n"
-		<< "                          pixel array will initially be oversampled by a value\n"
-		<< "                          of 2^4 = 16 along both axes. This will require\n"
-		<< "                          16*16 = 256 times more memory. Default value: " << ncc.over_sample << "\n"
-		<< "  -wm,--write_maps        Specify whether to write number of caustic crossings\n"
-		<< "                          maps (1) or not (0). Default value: " << ncc.write_maps << "\n"
-		<< "  -wh,--write_histograms  Specify whether to write histograms (1) or not (0).\n"
-		<< "                          Default value: " << ncc.write_histograms << "\n"
-		<< "  -o,--outfile_prefix     Specify the prefix to be used in output file names.\n"
-		<< "                          Default value: " << ncc.outfile_prefix << "\n";
+		<< "  -h,--help                Show this help message.\n"
+		<< "  -v,--verbose             Toggle verbose output. Takes no option value.\n"
+		<< "  -ip,--infile_prefix      Specify the prefix to be used when reading in files.\n"
+		<< "                           Default value: " << ncc.infile_prefix << "\n"
+		<< "  -cy1, --center_y1        Specify the y1 and y2 coordinates of the center of\n"
+		<< "  -cy2, --center_y2        the number of caustic crossings map.\n"
+		<< "                           Default value: " << ncc.center_y << "\n"
+		<< "  -hly1,--half_length_y1   Specify the y1 and y2 extent of the half-length of\n"
+		<< "  -hly2,--half_length_y2   the number of caustic crossings map.\n"
+		<< "                           Default value: " << ncc.half_length_y << "\n"
+		<< "  -npy1,--num_pixels_y1    Specify the number of pixels per side for the\n"
+		<< "  -npy2,--num_pixels_y2    number of caustic crossings map.\n"
+		<< "                           Default value: " << ncc.num_pixels_y << "\n"
+		<< "  -os,--over_sample        Specify the power of 2 by which to oversample the\n"
+		<< "                           final pixels. E.g., an input of 4 means the final\n"
+		<< "                           pixel array will initially be oversampled by a value\n"
+		<< "                           of 2^4 = 16 along both axes. This will require\n"
+		<< "                           16*16 = 256 times more memory. Default value: " << ncc.over_sample << "\n"
+		<< "  -wm,--write_maps         Specify whether to write number of caustic crossings\n"
+		<< "                           maps (1) or not (0). Default value: " << ncc.write_maps << "\n"
+		<< "  -wh,--write_histograms   Specify whether to write histograms (1) or not (0).\n"
+		<< "                           Default value: " << ncc.write_histograms << "\n"
+		<< "  -o,--outfile_prefix      Specify the prefix to be used in output file names.\n"
+		<< "                           Default value: " << ncc.outfile_prefix << "\n";
 }
 
 
@@ -183,27 +185,51 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 		}
-		else if (argv[i] == std::string("-hl") || argv[i] == std::string("--half_length"))
+		else if (argv[i] == std::string("-hly1") || argv[i] == std::string("--half_length_y1"))
 		{
 			try
 			{
-				set_param("half_length", ncc.half_length, std::stod(cmdinput), verbose);
+				set_param("half_length_y1", ncc.half_length_y.re, std::stod(cmdinput), verbose);
 			}
 			catch (...)
 			{
-				std::cerr << "Error. Invalid half_length input.\n";
+				std::cerr << "Error. Invalid half_length_y1 input.\n";
 				return -1;
 			}
 		}
-		else if (argv[i] == std::string("-px") || argv[i] == std::string("--pixels"))
+		else if (argv[i] == std::string("-hly2") || argv[i] == std::string("--half_length_y2"))
 		{
 			try
 			{
-				set_param("num_pixels", ncc.num_pixels, std::stoi(cmdinput), verbose);
+				set_param("half_length_y2", ncc.half_length_y.im, std::stod(cmdinput), verbose);
 			}
 			catch (...)
 			{
-				std::cerr << "Error. Invalid num_pixels input.\n";
+				std::cerr << "Error. Invalid half_length_y2 input.\n";
+				return -1;
+			}
+		}
+		else if (argv[i] == std::string("-npy1") || argv[i] == std::string("--num_pixels_y1"))
+		{
+			try
+			{
+				set_param("num_pixels_y1", ncc.num_pixels_y.re, std::stoi(cmdinput), verbose);
+			}
+			catch (...)
+			{
+				std::cerr << "Error. Invalid num_pixels_y1 input.\n";
+				return -1;
+			}
+		}
+		else if (argv[i] == std::string("-npy2") || argv[i] == std::string("--num_pixels_y2"))
+		{
+			try
+			{
+				set_param("num_pixels_y2", ncc.num_pixels_y.im, std::stoi(cmdinput), verbose);
+			}
+			catch (...)
+			{
+				std::cerr << "Error. Invalid num_pixels_y2 input.\n";
 				return -1;
 			}
 		}
