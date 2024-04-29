@@ -41,9 +41,9 @@ in the x-direction
 \return true if point in region, false if not
 ******************************************************************************/
 template <typename T>
-__device__ bool point_in_region(Complex<T> p0, T hl)
+__device__ bool point_in_region(Complex<T> p0, Complex<T> hl)
 {
-	if (p0.re > -hl && fabs(p0.im) < hl)
+	if (p0.re > -hl.re && fabs(p0.im) < hl.im)
 	{
 		return true;
 	}
@@ -106,11 +106,11 @@ intersects, or lies within, the desired region
 \return position of corrected point
 ******************************************************************************/
 template <typename T>
-__device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, T hl, int npixels)
+__device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, Complex<T> hl, Complex<int> npixels)
 {
 	T x = p1.re;
 	T y = p1.im;
-	if (x <= -hl)
+	if (x <= -hl.re)
 	{
 		/******************************************************************************
 		if the x position is outside of our region, calculate where the point would be
@@ -118,10 +118,10 @@ __device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, T hl, int np
 		1/100 used due to later code only considering line crossings at the half pixel
 		mark
 		******************************************************************************/
-		x = -hl + 0.01 * 2 * hl / npixels;
+		x = -hl.re + 0.01 * 2 * hl.re / npixels.re;
 		y = get_line_y_position(p1, p2, x);
 	}
-	if (fabs(y) >= hl)
+	if (fabs(y) >= hl.im)
 	{
 		/******************************************************************************
 		if the y position is outside of our region, calculate where the point would be
@@ -129,28 +129,11 @@ __device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, T hl, int np
 		1/100 used due to later code only considering line crossings at the half pixel
 		mark
 		******************************************************************************/
-		y = sgn(y) * (hl - 0.01 * 2 * hl / npixels);
+		y = sgn(y) * (hl.im - 0.01 * 2 * hl.im / npixels.im);
 		x = get_line_x_position(p1, p2, y);
 	}
 
 	return Complex<T>(x, y);
-}
-
-/******************************************************************************
-calculate the pixel mapping of a point
-
-
-\param p0 -- point
-\param hl -- half length of the square region
-\param npixels -- number of pixels per side for the square region
-
-\return pixel position of point
-******************************************************************************/
-template <typename T, typename U>
-__device__ Complex<T> point_to_pixel(Complex<U> p0, U hl, int npixels)
-{
-	Complex<T> result((p0 + hl * Complex<T>(1, 1)) * npixels / (2 * hl));
-	return result;
 }
 
 /******************************************************************************
@@ -164,7 +147,7 @@ calculate the number of caustic crossings
 \param npixels -- number of pixels per side for the square region
 ******************************************************************************/
 template <typename T>
-__global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, double hl, int* num, int npixels)
+__global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> hl, int* num, Complex<int> npixels)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -203,9 +186,9 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			(i.e., really long caustic segments), correct the points so they both lie
 			within the region
 			******************************************************************************/
-			else if (get_line_x_position(pt0, pt1, hl) >= -hl
-				|| get_line_x_position(pt0, pt1, -hl) >= -hl
-				|| fabs(get_line_y_position(pt0, pt1, -hl)) <= hl)
+			else if (get_line_x_position(pt0, pt1, hl.im) >= -hl.re
+				|| get_line_x_position(pt0, pt1, -hl.im) >= -hl.re
+				|| fabs(get_line_y_position(pt0, pt1, -hl.re)) <= hl.im)
 			{
 				pt0 = corrected_point(pt0, pt1, hl, npixels);
 				pt1 = corrected_point(pt1, pt0, hl, npixels);
@@ -300,19 +283,19 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					T x1 = get_line_x_position(pixpt0, pixpt1, k);
 					ypix = Complex<int>(x1 - 0.5, k);
 
-					ypix.im = npixels - 1 - ypix.im;
-					if (ypix.re > npixels - 1)
+					ypix.im = npixels.im - 1 - ypix.im;
+					if (ypix.re > npixels.re - 1)
 					{
-						ypix.re = npixels - 1;
+						ypix.re = npixels.re - 1;
 					}
 					for (int l = 0; l <= ypix.re; l++)
 					{
-						if (ypix.im * npixels + l < 0 || ypix.im * npixels + l > npixels * npixels - 1)
+						if (ypix.im * npixels.re + l < 0 || ypix.im * npixels.re + l > npixels.re * npixels.im - 1)
 						{
 							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
-						atomicSub(&num[ypix.im * npixels + l], 1);
+						atomicSub(&num[ypix.im * npixels.re + l], 1);
 					}
 				}
 			}
@@ -339,19 +322,19 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					T x1 = get_line_x_position(pixpt0, pixpt1, k);
 					ypix = Complex<int>(x1 - 0.5, k);
 
-					ypix.im = npixels - 1 - ypix.im;
-					if (ypix.re > npixels - 1)
+					ypix.im = npixels.im - 1 - ypix.im;
+					if (ypix.re > npixels.re - 1)
 					{
-						ypix.re = npixels - 1;
+						ypix.re = npixels.re - 1;
 					}
 					for (int l = 0; l <= ypix.re; l++)
 					{
-						if (ypix.im * npixels + l < 0 || ypix.im * npixels + l > npixels * npixels - 1)
+						if (ypix.im * npixels.re + l < 0 || ypix.im * npixels.re + l > npixels.re * npixels.im - 1)
 						{
 							printf("Error. Caustic crossing takes place outside the desired region.\n");
 							continue;
 						}
-						atomicAdd(&num[ypix.im * npixels + l], 1);
+						atomicAdd(&num[ypix.im * npixels.re + l], 1);
 					}
 				}
 			}
