@@ -355,8 +355,8 @@ private:
 			std::cerr << "Error. Failed to open file " << fname << "\n";
 			return false;
 		}
-		outfile << "center_y1" << center_y.re << "\n";
-		outfile << "center_y2" << center_y.im << "\n";
+		outfile << "center_y1 " << center_y.re << "\n";
+		outfile << "center_y2 " << center_y.im << "\n";
 		outfile << "half_length_y1 " << half_length_y.re << "\n";
 		outfile << "half_length_y2 " << half_length_y.im << "\n";
 		outfile << "num_pixels_y1 " << num_pixels_y.re << "\n";
