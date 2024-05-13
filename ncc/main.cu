@@ -13,7 +13,14 @@ Email: weisluke@alum.mit.edu
 #include <string>
 
 
-using dtype = double;
+#if defined(is_float) && !defined(is_double)
+using dtype = float; //type to be used throughout this program. float or double
+#elif !defined(is_float) && defined(is_double)
+using dtype = double; //type to be used throughout this program. float or double
+#else
+#error "Error. One, and only one, of is_float or is_double must be defined"
+#endif
+
 NCC<dtype> ncc;
 
 /******************************************************************************
