@@ -148,7 +148,7 @@ calculate the number of caustic crossings
 \param npixels -- number of pixels per side for the square region
 ******************************************************************************/
 template <typename T>
-__global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> hl, int* num, Complex<int> npixels)
+__global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> hl, int* num, Complex<int> npixels, unsigned long long int* percentage)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -199,6 +199,16 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			******************************************************************************/
 			else
 			{
+				if (threadIdx.x == 0 && threadIdx.y == 0)
+				{
+					unsigned long long int p = atomicAdd(percentage, 1);
+					unsigned long long int imax = ((nrows - 1) / blockDim.x + 1);
+					imax *= (((ncols - 1) - 1) / blockDim.y + 1);
+					if (p * 100 / imax > (p - 1) * 100 / imax)
+					{
+						device_print_progress(p, imax);
+					}
+				}
 				continue;
 			}
 
@@ -247,6 +257,16 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			******************************************************************************/
 			if (ystart < 0)
 			{
+				if (threadIdx.x == 0 && threadIdx.y == 0)
+				{
+					unsigned long long int p = atomicAdd(percentage, 1);
+					unsigned long long int imax = ((nrows - 1) / blockDim.x + 1);
+					imax *= (((ncols - 1) - 1) / blockDim.y + 1);
+					if (p * 100 / imax > (p - 1) * 100 / imax)
+					{
+						device_print_progress(p, imax);
+					}
+				}
 				continue;
 			}
 
@@ -337,6 +357,17 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 						}
 						atomicAdd(&num[ypix.im * npixels.re + l], 1);
 					}
+				}
+			}
+			
+			if (threadIdx.x == 0 && threadIdx.y == 0)
+			{
+				unsigned long long int p = atomicAdd(percentage, 1);
+				unsigned long long int imax = ((nrows - 1) / blockDim.x + 1);
+				imax *= (((ncols - 1) - 1) / blockDim.y + 1);
+				if (p * 100 / imax > (p - 1) * 100 / imax)
+				{
+					device_print_progress(p, imax);
 				}
 			}
 		}

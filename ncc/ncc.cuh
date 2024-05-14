@@ -180,6 +180,9 @@ private:
 			std::cerr << "Error. Unable to read caustics from file " << fname << "\n";
 			return false;
 		}
+
+		set_param("num_rows", num_rows, num_rows, verbose);
+		set_param("num_cols", num_cols, num_cols, verbose);
 		
 		if (num_rows < 1 || num_cols < 2)
 		{
@@ -243,18 +246,23 @@ private:
 	bool calculate_num_caustic_crossings(bool verbose)
 	{
 		set_threads(threads, 16, 16);
-		set_blocks(threads, blocks, num_rows, num_cols);
+		set_blocks(threads, blocks, num_rows, num_cols - 1);
 
+		unsigned long long int* percentage = nullptr;
+		cudaMallocManaged(&percentage, sizeof(unsigned long long int));
+		if (cuda_error("cudaMallocManaged(*percentage)", false, __FILE__, __LINE__)) return false;
+
+		*percentage = 1;
 
 		/******************************************************************************
 		calculate number of caustic crossings and calculate time taken in seconds
 		******************************************************************************/
 		std::cout << "Calculating number of caustic crossings...\n";
 		stopwatch.start();
-		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length_y, num_crossings, num_pixels_y);
+		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length_y, num_crossings, num_pixels_y, percentage);
 		if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return false;
 		t_ncc = stopwatch.stop();
-		std::cout << "Done finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
+		std::cout << "\nDone finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
 
 
 		/******************************************************************************
