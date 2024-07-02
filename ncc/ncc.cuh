@@ -193,15 +193,6 @@ private:
 		t_elapsed = stopwatch.stop();
 		std::cout << "Done reading in caustics. Elapsed time: " << t_elapsed << " seconds.\n\n";
 
-		print_verbose("Recentering caustics...\n", verbose);
-
-		set_threads(threads, 16, 16);
-		set_blocks(threads, blocks, num_rows, num_cols);
-		recenter_caustics_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, center_y);
-		if (cuda_error("recenter_caustics_kernel", true, __FILE__, __LINE__)) return false;
-
-		print_verbose("Done recentering caustics.\n\n", verbose);
-
 		return true;
 	}
 
@@ -259,7 +250,7 @@ private:
 		******************************************************************************/
 		std::cout << "Calculating number of caustic crossings...\n";
 		stopwatch.start();
-		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, half_length_y, num_crossings, num_pixels_y, percentage);
+		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, center_y, half_length_y, num_crossings, num_pixels_y, percentage);
 		if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return false;
 		t_ncc = stopwatch.stop();
 		std::cout << "\nDone finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";

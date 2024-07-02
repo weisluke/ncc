@@ -132,7 +132,7 @@ __device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, Complex<T> h
 		1/100 used due to later code only considering line crossings at the half pixel
 		mark
 		******************************************************************************/
-		x = -hl.re + 0.01 * 2 * hl.re / npixels.re;
+		x = -hl.re + static_cast<T>(0.01) * 2 * hl.re / npixels.re;
 		y = get_y_intersection(x, p1, p2);
 	}
 	if (fabs(y) >= hl.im)
@@ -143,7 +143,7 @@ __device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, Complex<T> h
 		1/100 used due to later code only considering line crossings at the half pixel
 		mark
 		******************************************************************************/
-		y = sgn(y) * (hl.im - 0.01 * 2 * hl.im / npixels.im);
+		y = sgn(y) * (hl.im - static_cast<T>(0.01) * 2 * hl.im / npixels.im);
 		x = get_x_intersection(y, p1, p2);
 	}
 
@@ -156,12 +156,14 @@ calculate the number of caustic crossings
 \param caustics -- array of caustic positions
 \param nrows -- number of rows in array
 \param ncols -- number of columns in array
-\param hl -- half length of the square region
+\param center_y -- center of the source plane receiving region
+\param hly -- half length of the source plane receiving region
 \param num -- array of number of caustic crossings
 \param npixels -- number of pixels per side for the square region
 ******************************************************************************/
 template <typename T>
-__global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> hl, int* num, Complex<int> npixels, unsigned long long int* percentage)
+__global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> center_y, Complex<T> hly, 
+	int* num, Complex<int> npixels, unsigned long long int* percentage)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -182,30 +184,30 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			initial and final point of the line segment
 			we will be calculating what pixels this line segment crosses
 			******************************************************************************/
-			Complex<T> pt0 = caustics[i * ncols + j];
-			Complex<T> pt1 = caustics[i * ncols + j + 1];
+			Complex<T> pt0 = caustics[i * ncols + j] - center_y;
+			Complex<T> pt1 = caustics[i * ncols + j + 1] - center_y;
 
 			/******************************************************************************
 			if one of the endpoints lies within the region, correct the points so they both
 			lie within the region
 			possibly redundant if both lie within the region
 			******************************************************************************/
-			if (point_in_region(pt0, hl) || point_in_region(pt1, hl))
+			if (point_in_region(pt0, hly) || point_in_region(pt1, hly))
 			{
-				pt0 = corrected_point(pt0, pt1, hl, npixels);
-				pt1 = corrected_point(pt1, pt0, hl, npixels);
+				pt0 = corrected_point(pt0, pt1, hly, npixels);
+				pt1 = corrected_point(pt1, pt0, hly, npixels);
 			}
 			/******************************************************************************
 			else if both points are outside the region, but intersect the region boundaries
 			(i.e., really long caustic segments), correct the points so they both lie
 			within the region
 			******************************************************************************/
-			else if (get_x_intersection(hl.im, pt0, pt1) >= -hl.re
-				|| get_x_intersection(-hl.im, pt0, pt1) >= -hl.re
-				|| fabs(get_y_intersection(-hl.re, pt0, pt1)) <= hl.im)
+			else if (get_x_intersection(hly.im, pt0, pt1) >= -hly.re
+				|| get_x_intersection(-hly.im, pt0, pt1) >= -hly.re
+				|| fabs(get_y_intersection(-hly.re, pt0, pt1)) <= hly.im)
 			{
-				pt0 = corrected_point(pt0, pt1, hl, npixels);
-				pt1 = corrected_point(pt1, pt0, hl, npixels);
+				pt0 = corrected_point(pt0, pt1, hly, npixels);
+				pt1 = corrected_point(pt1, pt0, hly, npixels);
 			}
 			/******************************************************************************
 			else continue on to the next caustic segment
@@ -228,8 +230,8 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			/******************************************************************************
 			make complex pixel start and end positions
 			******************************************************************************/
-			pt0 = point_to_pixel<T, T>(pt0, hl, npixels);
-			pt1 = point_to_pixel<T, T>(pt1, hl, npixels);
+			pt0 = point_to_pixel<T, T>(pt0, hly, npixels);
+			pt1 = point_to_pixel<T, T>(pt1, hly, npixels);
 
 			Complex<int> ypix;
 
@@ -334,32 +336,6 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					device_print_progress(p, imax);
 				}
 			}
-		}
-	}
-}
-
-/******************************************************************************
-recenter the caustics relative to the given center
-
-\param caustics -- array of caustic positions
-\param nrows -- number of rows in array
-\param ncols -- number of columns in array
-\param center_y -- center of the source plane receiving region
-******************************************************************************/
-template <typename T>
-__global__ void recenter_caustics_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> center_y)
-{
-	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
-	int x_stride = blockDim.x * gridDim.x;
-
-	int y_index = blockIdx.y * blockDim.y + threadIdx.y;
-	int y_stride = blockDim.y * gridDim.y;
-
-	for (int i = x_index; i < ncols; i += x_stride)
-	{
-		for (int j = y_index; j < nrows; j += y_stride)
-		{
-			caustics[j * ncols + i] -= center_y;
 		}
 	}
 }
