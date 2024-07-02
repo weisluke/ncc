@@ -52,45 +52,58 @@ __device__ bool point_in_region(Complex<T> p0, Complex<T> hl)
 }
 
 /******************************************************************************
-return the x position of a line connecting two points, at a particular y-value
-handles vertical lines by returning the x position of the first point
-
-\param p1 -- first point
-\param p2 -- second point
-\param y -- y position
-
-\return x position of connecting line at y position
+find the x and y intersections of a line connecting two points at the
+provided x or y values
 ******************************************************************************/
 template <typename T>
-__device__ T get_line_x_position(Complex<T> p1, Complex<T> p2, T y)
+__device__ T get_x_intersection(T y, Complex<T> p1, Complex<T> p2)
 {
-	if (p1.re == p2.re)
+	T dx = (p2.re - p1.re);
+	/******************************************************************************
+	if it is a vertical line, return the x coordinate of p1
+	******************************************************************************/
+	if (dx == 0)
 	{
 		return p1.re;
 	}
-	T slope = (p2.im - p1.im) / (p2.re - p1.re);
-	return (y - p1.im) / slope + p1.re;
+	T log_dx = log(fabs(dx));
+	T dy = (p2.im - p1.im);
+	T log_dy = log(fabs(dy));
+	
+	/******************************************************************************
+	parameter t in parametric equation of a line
+	x = x0 + t * dx
+	y = y0 + t * dy
+	******************************************************************************/
+	T log_t = log(fabs(y - p1.im)) - log_dy;
+	
+	T x = p1.re + sgn(y - p1.im) * sgn(dy) * sgn(dx) * exp(log_t + log_dx);
+	return x;
 }
-
-/******************************************************************************
-return the y position of a line connecting two points, at a particular x-value
-handles vertical lines by returning the y position of the first point
-
-\param p1 -- first point
-\param p2 -- second point
-\param x -- x position
-
-\return y position of connecting line at x position
-******************************************************************************/
 template <typename T>
-__device__ T get_line_y_position(Complex<T> p1, Complex<T> p2, T x)
+__device__ T get_y_intersection(T x, Complex<T> p1, Complex<T> p2)
 {
-	if (p1.re == p2.re)
+	T dy = (p2.im - p1.im);
+	/******************************************************************************
+	if it is a horizontal line, return the y coordinate of p1
+	******************************************************************************/
+	if (dy == 0)
 	{
 		return p1.im;
 	}
-	T slope = (p2.im - p1.im) / (p2.re - p1.re);
-	return slope * (x - p1.re) + p1.im;
+	T log_dy = log(fabs(dy));
+	T dx = (p2.re - p1.re);
+	T log_dx = log(fabs(dx));
+
+	/******************************************************************************
+	parameter t in parametric equation of a line
+	x = x0 + t * dx
+	y = y0 + t * dy
+	******************************************************************************/
+	T log_t = log(fabs(x - p1.re)) - log_dx;
+	
+	T y = p1.im + sgn(x - p1.re) * sgn(dx) * sgn(dy) * exp(log_t + log_dy);
+	return y;
 }
 
 /******************************************************************************
@@ -120,7 +133,7 @@ __device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, Complex<T> h
 		mark
 		******************************************************************************/
 		x = -hl.re + 0.01 * 2 * hl.re / npixels.re;
-		y = get_line_y_position(p1, p2, x);
+		y = get_y_intersection(x, p1, p2);
 	}
 	if (fabs(y) >= hl.im)
 	{
@@ -131,7 +144,7 @@ __device__ Complex<T> corrected_point(Complex<T> p1, Complex<T> p2, Complex<T> h
 		mark
 		******************************************************************************/
 		y = sgn(y) * (hl.im - 0.01 * 2 * hl.im / npixels.im);
-		x = get_line_x_position(p1, p2, y);
+		x = get_x_intersection(y, p1, p2);
 	}
 
 	return Complex<T>(x, y);
@@ -187,9 +200,9 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			(i.e., really long caustic segments), correct the points so they both lie
 			within the region
 			******************************************************************************/
-			else if (get_line_x_position(pt0, pt1, hl.im) >= -hl.re
-				|| get_line_x_position(pt0, pt1, -hl.im) >= -hl.re
-				|| fabs(get_line_y_position(pt0, pt1, -hl.re)) <= hl.im)
+			else if (get_x_intersection(hl.im, pt0, pt1) >= -hl.re
+				|| get_x_intersection(-hl.im, pt0, pt1) >= -hl.re
+				|| fabs(get_y_intersection(-hl.re, pt0, pt1)) <= hl.im)
 			{
 				pt0 = corrected_point(pt0, pt1, hl, npixels);
 				pt1 = corrected_point(pt1, pt0, hl, npixels);
@@ -215,65 +228,8 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			/******************************************************************************
 			make complex pixel start and end positions
 			******************************************************************************/
-			Complex<T> pixpt0 = point_to_pixel<T, T>(pt0, hl, npixels);
-			Complex<T> pixpt1 = point_to_pixel<T, T>(pt1, hl, npixels);
-
-			/******************************************************************************
-			find starting and ending pixel positions including fractional parts
-			******************************************************************************/
-			T ystart = pixpt0.im;
-			T yend = pixpt1.im;
-
-			/******************************************************************************
-			if caustic subsegment starts or ends exactly in the middle of a pixel, shift
-			starting position down by 0.01 pixels
-			done to avoid double-counting crossings at that particular point, since it is
-			the end of one segment and the start of another
-			******************************************************************************/
-			if (ystart == static_cast<int>(ystart) + 0.5)
-			{
-				ystart -= 0.01;
-			}
-			if (yend == static_cast<int>(yend) + 0.5)
-			{
-				yend -= 0.01;
-			}
-
-			/******************************************************************************
-			offset start by half a pixel in the direction of the ordered points
-			this will ensure that after casting things to integer pixel values, we are only
-			using pixels for which the segment crosses the center
-			******************************************************************************/
-			ystart += sgn(pt1.im - pt0.im) / 2;
-
-			/******************************************************************************
-			take into account starting points between 0 and 0.5 that get pushed outside the
-			desired region, i.e. below 0, if y_end < y_start (e.g., a line from y=0.4 to
-			y=0.1 would get changed after the line above to look like from y=-0.1 to y=0.1,
-			and would have y_pixel_start = y_pixel_end = 0, making later code think it
-			crosses the center of the pixel when in reality it doesn't)
-			only needs accounted for in this case due to integer truncation at 0 being the
-			same for +/- small values. it is NOT a problem at other borders of the region
-			******************************************************************************/
-			if (ystart < 0)
-			{
-				if (threadIdx.x == 0 && threadIdx.y == 0)
-				{
-					unsigned long long int p = atomicAdd(percentage, 1);
-					unsigned long long int imax = ((nrows - 1) / blockDim.x + 1);
-					imax *= (((ncols - 1) - 1) / blockDim.y + 1);
-					if (p * 100 / imax > (p - 1) * 100 / imax)
-					{
-						device_print_progress(p, imax);
-					}
-				}
-				continue;
-			}
-
-			/******************************************************************************
-			find actual starting y value at pixel center
-			******************************************************************************/
-			ystart = static_cast<int>(ystart) + 0.5;
+			pt0 = point_to_pixel<T, T>(pt0, hl, npixels);
+			pt1 = point_to_pixel<T, T>(pt1, hl, npixels);
 
 			Complex<int> ypix;
 
@@ -288,21 +244,22 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			if (pt0.im < pt1.im)
 			{
 				/******************************************************************************
-				for all y-values from the start of the line segment (at a half-pixel) to the
-				end (could be anywhere) in increments of one pixel
+				for all y-pixel values from the start of the line segment to the end
 				******************************************************************************/
-				for (T k = ystart; k < yend; k += 1)
+				for (int k = static_cast<int>(pt0.im + 0.5); k < static_cast<int>(pt1.im + 0.5); k++)
 				{
 					/******************************************************************************
-					find the x position of the caustic segment at the current y value
-					find the integer pixel value for this x-position (subtracting 0.5 to account
-					for the fact that we need to be to the right of the pixel center) and the
-					integer y pixel value
+					find the x position of the caustic segment at the middle of the pixel
+					find the integer pixel value for this x-position and the integer y pixel value
+					   we would naively subtract 0.5 from x, as the caustic segment needs to be to
+					   the right of the center. however, segments to the left of the center of the
+					   0 pixel would still get cast to 0. we therefore add 0.5, cast, and subtract 
+					   1 instead
 					if the x-pixel value is greater than the number of pixels, we perform the
 					subtraction on the whole pixel row
 					******************************************************************************/
-					T x1 = get_line_x_position(pixpt0, pixpt1, k);
-					ypix = Complex<int>(x1 - 0.5, k);
+					T x1 = get_x_intersection(k + 0.5, pt0, pt1);
+					ypix = Complex<int>(x1 + 0.5, k) - Complex<int>(1, 0);
 
 					ypix.im = npixels.im - 1 - ypix.im;
 					if (ypix.re > npixels.re - 1)
@@ -330,18 +287,25 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 			******************************************************************************/
 			else if (pt0.im > pt1.im)
 			{
-				for (T k = ystart; k > yend; k -= 1)
+				/******************************************************************************
+				for all y-pixel values from the start of the line segment to the end
+				******************************************************************************/
+				for (int k = static_cast<int>(pt0.im + 0.5); k > static_cast<int>(pt1.im + 0.5); k--)
 				{
 					/******************************************************************************
-					find the x position of the caustic segment at the current y value
-					find the integer pixel value for this x-position (subtracting 0.5 to account
-					for the fact that we need to be to the right of the pixel center) and the
-					integer y pixel value
+					find the x position of the caustic segment at the middle of the pixel
+					   since we are heading in the negative y direction, subtract 0.5
+					find the integer pixel value for this x-position and the integer y pixel value
+					   we would naively subtract 0.5 from x, as the caustic segment needs to be to
+					   the right of the center. however, segments to the left of the center of the
+					   0 pixel would still get cast to 0. we therefore add 0.5, cast, and subtract 
+					   1 instead. we subtract 1 in the y direction as well since we are moving in
+					   the negative direction
 					if the x-pixel value is greater than the number of pixels, we perform the
-					addition on the whole pixel row
+					subtraction on the whole pixel row
 					******************************************************************************/
-					T x1 = get_line_x_position(pixpt0, pixpt1, k);
-					ypix = Complex<int>(x1 - 0.5, k);
+					T x1 = get_x_intersection(k - 0.5, pt0, pt1);
+					ypix = Complex<int>(x1 + 0.5, k) - Complex<int>(1, 1);
 
 					ypix.im = npixels.im - 1 - ypix.im;
 					if (ypix.re > npixels.re - 1)
