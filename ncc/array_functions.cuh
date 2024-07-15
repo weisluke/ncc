@@ -1,7 +1,6 @@
 #pragma once
 
 #include "complex.cuh"
-#include "util.cuh"
 
 #include <filesystem>
 #include <fstream>
@@ -31,6 +30,29 @@ __global__ void initialize_array_kernel(T* vals, int nrows, int ncols)
 		{
 			vals[j * ncols + i] = 0;
 		}
+	}
+}
+
+/******************************************************************************
+transpose array
+
+\param z1 -- pointer to array of values
+\param nrows -- number of rows in array
+\param ncols -- number of columns in array
+\param z2 -- pointer to transposed array of values
+******************************************************************************/
+template <typename T>
+__global__ void transpose_array_kernel(T* z1, int nrows, int ncols, T* z2)
+{
+	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
+	int x_stride = blockDim.x * gridDim.x;
+
+	for (int a = x_index; a < nrows * ncols; a += x_stride)
+	{
+		int col = a % ncols;
+		int row = (a - col) / ncols;
+
+		z2[col * nrows + row] = z1[a];
 	}
 }
 
@@ -86,7 +108,7 @@ calculate the histogram of rays for the pixel array
 \param hist_min -- minimum value in the histogram
 \param histogram -- pointer to histogram
 \param factor -- factor by which to multiply the pixel values before casting
-				 to integers for the histogram
+                 to integers for the histogram
 ******************************************************************************/
 template <typename T>
 __global__ void histogram_kernel(T* pixels, Complex<int> npixels, int hist_min, int* histogram, int factor = 1)
