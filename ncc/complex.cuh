@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <iostream>
-#include <stdexcept> //for std::logic_error
 
 
 /******************************************************************************
@@ -107,7 +106,7 @@ public:
 	{
 		T abs = this->abs();
 		T arg = this->arg();
-
+		
 		return Complex(std::log(abs), arg);
 	}
 
@@ -220,7 +219,7 @@ public:
 	{
 		T new_re;
 		T new_im;
-
+		
 		//use Smith's formula
 		if (std::abs(c1.im) < std::abs(c1.re))
 		{
@@ -251,14 +250,14 @@ public:
 		if (std::abs(c2.im) < std::abs(c2.re))
 		{
 			T f = c2.im / c2.re;
-			return Complex((c1.re + c1.im * f) / (c2.re + c2.im * f),
-				(c1.im - c1.re * f) / (c2.re + c2.im * f));
+			return Complex((c1.re + c1.im * f) / (c2.re + c2.im * f), 
+							(c1.im - c1.re * f) / (c2.re + c2.im * f));
 		}
 		else
 		{
 			T f = c2.re / c2.im;
-			return Complex((c1.re * f + c1.im) / (c2.re * f + c2.im),
-				(c1.im * f - c1.re) / (c2.re * f + c2.im));
+			return Complex((c1.re * f + c1.im) / (c2.re * f + c2.im), 
+							(c1.im * f - c1.re) / (c2.re * f + c2.im));
 		}
 	}
 	template <typename U> __host__ __device__ friend Complex operator/(Complex c1, U num)
