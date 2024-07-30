@@ -290,6 +290,13 @@ private:
 		}
 		double t_reduce = stopwatch.stop();
 		std::cout << "Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n\n";
+		
+		min_num = *thrust::min_element(thrust::device, num_crossings, num_crossings + num_pixels_y.re * num_pixels_y.im);
+		if (min_num < 0)
+		{
+			std::cerr << "Error. Number of caustic crossings should be >= 0\n";
+			return false;
+		}
 
 		return true;
 	}
@@ -411,13 +418,13 @@ public:
 		if (!read_caustics(verbose)) return false;
 		if (!allocate_initialize_memory(verbose)) return false;
 		if (!calculate_num_caustic_crossings(verbose)) return false;
+		if (!create_histograms(verbose)) return false;
 
 		return true;
 	}
 
 	bool save(bool verbose)
 	{
-		if (!create_histograms(verbose)) return false;
 		if (!write_files(verbose)) return false;
 
 		return true;
