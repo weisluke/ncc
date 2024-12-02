@@ -87,6 +87,8 @@ private:
 
 	bool clear_memory(int verbose)
 	{
+		print_verbose("Clearing memory...\n", verbose, 3);
+
 		cudaDeviceReset(); //free all previously allocated memory
 		if (cuda_error("cudaDeviceReset", false, __FILE__, __LINE__)) return false;
 		
@@ -96,11 +98,14 @@ private:
 
 		histogram = nullptr;
 
+		print_verbose("Done clearing memory.\n\n", verbose, 3);
 		return true;
 	}
 
 	bool set_cuda_devices(int verbose)
 	{
+		print_verbose("Setting device...\n", verbose, 3);
+
 		/******************************************************************************
 		check that a CUDA capable device is present
 		******************************************************************************/
@@ -115,7 +120,7 @@ private:
 			return false;
 		}
 
-		if (verbose)
+		if (verbose >= 3)
 		{
 			std::cout << "Available CUDA capable devices:\n\n";
 
@@ -131,21 +136,22 @@ private:
 
 		if (n_devices > 1)
 		{
-			std::cout << "More than one CUDA capable device detected. Defaulting to first device.\n\n";
+			print_verbose("More than one CUDA capable device detected. Defaulting to first device.\n\n", verbose, 2);
 		}
 		cudaSetDevice(0);
 		if (cuda_error("cudaSetDevice", false, __FILE__, __LINE__)) return false;
 		cudaGetDeviceProperties(&cuda_device_prop, 0);
 		if (cuda_error("cudaGetDeviceProperties", false, __FILE__, __LINE__)) return false;
 
+		print_verbose("Done setting device.\n\n", verbose, 3);
 		return true;
 	}
 
 	bool check_input_params(int verbose)
 	{
-		std::cout << "Checking input parameters...\n";
+		print_verbose("Checking input parameters...\n", verbose, 3);
 
-		
+
 		if (half_length_y.re < std::numeric_limits<T>::min() || half_length_y.im < std::numeric_limits<T>::min())
 		{
 			std::cerr << "Error. half_length_y1 and half_length_y2 must both be >= " << std::numeric_limits<T>::min() << "\n";
@@ -177,7 +183,7 @@ private:
 		}
 
 
-		std::cout << "Done checking input parameters.\n\n";
+		print_verbose("Done checking input parameters.\n\n", verbose, 3);
 		
 		return true;
 	}
@@ -215,7 +221,7 @@ private:
 
 	bool allocate_initialize_memory(int verbose)
 	{
-		std::cout << "Allocating memory...\n";
+		print_verbose("Allocating memory...\n", verbose, 3);
 		stopwatch.start();
 
 		/******************************************************************************
@@ -223,6 +229,8 @@ private:
 		******************************************************************************/
 		num_pixels_y.re <<= over_sample;
 		num_pixels_y.im <<= over_sample;
+		set_param("num_pixels_y1", num_pixels_y.re, num_pixels_y.re, verbose);
+		set_param("num_pixels_y2", num_pixels_y.im, num_pixels_y.im, verbose);
 
 		/******************************************************************************
 		allocate memory for pixels
@@ -230,7 +238,8 @@ private:
 		cudaMallocManaged(&num_crossings, num_pixels_y.re * num_pixels_y.im * sizeof(int));
 		if (cuda_error("cudaMallocManaged(*num_crossings)", false, __FILE__, __LINE__)) return false;
 
-		std::cout << "Done allocating memory.\n\n";
+		t_elapsed = stopwatch.stop();
+		print_verbose("Done allocating memory. Elapsed time: " << t_elapsed << " seconds.\n\n", verbose, 3);
 
 
 		/******************************************************************************
@@ -239,14 +248,14 @@ private:
 		set_threads(threads, 16, 16);
 		set_blocks(threads, blocks, num_pixels_y.re, num_pixels_y.im);
 
-		std::cout << "Initializing pixel values...\n";
+		print_verbose("Initializing array values...\n", verbose, 3);
 		stopwatch.start();
 
 		initialize_array_kernel<int> <<<blocks, threads>>> (num_crossings, num_pixels_y.im, num_pixels_y.re);
 		if (cuda_error("initialize_array_kernel", true, __FILE__, __LINE__)) return false;
 
 		t_elapsed = stopwatch.stop();
-		std::cout << "Done initializing pixel values. Elapsed time: " << t_elapsed << " seconds.\n\n";
+		print_verbose("Done initializing array values. Elapsed time: " << t_elapsed << " seconds.\n\n", verbose, 3);
 
 		return true;
 	}
@@ -265,12 +274,12 @@ private:
 		/******************************************************************************
 		calculate number of caustic crossings and calculate time taken in seconds
 		******************************************************************************/
-		std::cout << "Calculating number of caustic crossings...\n";
+		print_verbose("Calculating number of caustic crossings...\n", verbose, 1);
 		stopwatch.start();
 		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, center_y, half_length_y, num_crossings, num_pixels_y, percentage, verbose);
 		if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return false;
 		t_ncc = stopwatch.stop();
-		std::cout << "\nDone finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
+		print_verbose("\nDone calculating number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n", verbose, 1);
 
 
 		/******************************************************************************
