@@ -69,21 +69,35 @@ private:
 	/******************************************************************************
 	derived variables
 	******************************************************************************/
-	int num_rows = 0;
-	int num_cols = 0;
+	int num_rows;
+	int num_cols;
 
 	/******************************************************************************
 	dynamic memory
 	******************************************************************************/
-	Complex<T>* caustics = nullptr;
-	int* num_crossings = nullptr;
+	Complex<T>* caustics;
+	int* num_crossings;
 
-	int min_num = std::numeric_limits<int>::max();
-	int max_num = 0;
-	int histogram_length = 0;
-	int* histogram = nullptr;
+	int min_num;
+	int max_num;
+	int histogram_length;
+	int* histogram;
 
 	
+
+	bool clear_memory(int verbose)
+	{
+		cudaDeviceReset(); //free all previously allocated memory
+		if (cuda_error("cudaDeviceReset", false, __FILE__, __LINE__)) return false;
+		
+		//and set variables to nullptr
+		caustics = nullptr;
+		num_crossings = nullptr;
+
+		histogram = nullptr;
+
+		return true;
+	}
 
 	bool set_cuda_devices(int verbose)
 	{
@@ -174,6 +188,9 @@ private:
 		stopwatch.start();
 
 		std::string fname = infile_prefix + caustics_file;
+
+		num_rows = 0;
+		num_cols = 0;
 
 		if (!read_complex_array<T>(caustics, num_rows, num_cols, fname))
 		{
@@ -413,6 +430,7 @@ public:
 
 	bool run(int verbose)
 	{
+		if (!clear_memory(verbose)) return false;
 		if (!set_cuda_devices(verbose)) return false;
 		if (!check_input_params(verbose)) return false;
 		if (!read_caustics(verbose)) return false;
