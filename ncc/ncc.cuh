@@ -85,7 +85,7 @@ private:
 
 	
 
-	bool set_cuda_devices(bool verbose)
+	bool set_cuda_devices(int verbose)
 	{
 		/******************************************************************************
 		check that a CUDA capable device is present
@@ -127,7 +127,7 @@ private:
 		return true;
 	}
 
-	bool check_input_params(bool verbose)
+	bool check_input_params(int verbose)
 	{
 		std::cout << "Checking input parameters...\n";
 
@@ -168,7 +168,7 @@ private:
 		return true;
 	}
 	
-	bool read_caustics(bool verbose)
+	bool read_caustics(int verbose)
 	{
 		std::cout << "Reading in caustics...\n";
 		stopwatch.start();
@@ -196,7 +196,7 @@ private:
 		return true;
 	}
 
-	bool allocate_initialize_memory(bool verbose)
+	bool allocate_initialize_memory(int verbose)
 	{
 		std::cout << "Allocating memory...\n";
 		stopwatch.start();
@@ -234,7 +234,7 @@ private:
 		return true;
 	}
 
-	bool calculate_num_caustic_crossings(bool verbose)
+	bool calculate_num_caustic_crossings(int verbose)
 	{
 		set_threads(threads, 16, 16);
 		set_blocks(threads, blocks, num_rows, num_cols - 1);
@@ -250,7 +250,7 @@ private:
 		******************************************************************************/
 		std::cout << "Calculating number of caustic crossings...\n";
 		stopwatch.start();
-		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, center_y, half_length_y, num_crossings, num_pixels_y, percentage);
+		find_num_caustic_crossings_kernel<T> <<<blocks, threads>>> (caustics, num_rows, num_cols, center_y, half_length_y, num_crossings, num_pixels_y, percentage, verbose);
 		if (cuda_error("find_num_caustic_crossings_kernel", true, __FILE__, __LINE__)) return false;
 		t_ncc = stopwatch.stop();
 		std::cout << "\nDone finding number of caustic crossings. Elapsed time: " << t_ncc << " seconds.\n\n";
@@ -301,7 +301,7 @@ private:
 		return true;
 	}
 
-	bool create_histograms(bool verbose)
+	bool create_histograms(int verbose)
 	{
 		/******************************************************************************
 		create histograms of pixel values
@@ -343,7 +343,7 @@ private:
 		return true;
 	}
 
-	bool write_files(bool verbose)
+	bool write_files(int verbose)
 	{
 		/******************************************************************************
 		stream for writing output files
@@ -411,7 +411,7 @@ private:
 
 public:
 
-	bool run(bool verbose)
+	bool run(int verbose)
 	{
 		if (!set_cuda_devices(verbose)) return false;
 		if (!check_input_params(verbose)) return false;
@@ -423,7 +423,7 @@ public:
 		return true;
 	}
 
-	bool save(bool verbose)
+	bool save(int verbose)
 	{
 		if (!write_files(verbose)) return false;
 

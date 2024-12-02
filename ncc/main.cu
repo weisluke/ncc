@@ -47,7 +47,7 @@ const std::string OPTS[OPTS_SIZE] =
 /******************************************************************************
 default input option values
 ******************************************************************************/
-bool verbose = false;
+int verbose = 1;
 
 
 
@@ -70,7 +70,8 @@ void display_usage(char* name)
 		<< "                                                                               \n"
 		<< "Options:\n"
 		<< "  -h,--help                Show this help message.\n"
-		<< "  -v,--verbose             Toggle verbose output. Takes no option value.\n"
+		<< "  -v,--verbose             Specify verbosity of output from 0 (none) to 1, 2,\n"
+		<< "                           or 3 (low, medium, high). Default value: " << verbose << "\n"
 		<< "  -ip,--infile_prefix      Specify the prefix to be used when reading in files.\n"
 		<< "                           Default value: " << ncc.infile_prefix << "\n"
 		<< "  -cy1, --center_y1        Specify the y1 and y2 coordinates of the center of\n"
@@ -112,10 +113,8 @@ int main(int argc, char* argv[])
 	if there are input options, but not an even number (since all options take a
 	parameter), display usage message and exit
 	subtract 1 to take into account that first argument array value is program name
-	account for possible verbose option, which is a toggle and takes no input
 	******************************************************************************/
-	if ((argc - 1) % 2 != 0 &&
-		!(cmd_option_exists(argv, argv + argc, "-v") || cmd_option_exists(argv, argv + argc, "--verbose")))
+	if ((argc - 1) % 2 != 0)
 	{
 		std::cerr << "Error. Invalid input syntax.\n";
 		display_usage(argv[0]);
@@ -126,21 +125,27 @@ int main(int argc, char* argv[])
 	check that all options given are valid. use step of 2 since all input options
 	take parameters (assumed to be given immediately after the option). start at 1,
 	since first array element, argv[0], is program name
-	account for possible verbose option, which is a toggle and takes no input
 	******************************************************************************/
 	for (int i = 1; i < argc; i += 2)
 	{
-		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
-		{
-			verbose = true;
-			i--;
-			continue;
-		}
 		if (!cmd_option_valid(OPTS, OPTS + OPTS_SIZE, argv[i]))
 		{
 			std::cerr << "Error. Invalid input syntax. Unknown option " << argv[i] << "\n";
 			display_usage(argv[0]);
 			return -1;
+		}
+		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
+		{
+			char* cmdinput = cmd_option_value(argv, argv + argc, std::string(argv[i]));
+			try
+			{
+				set_param("verbose", verbose, std::stoi(cmdinput), std::stoi(cmdinput));
+			}
+			catch (...)
+			{
+				std::cerr << "Error. Invalid verbose input.\n";
+				return -1;
+			}
 		}
 	}
 
@@ -149,20 +154,9 @@ int main(int argc, char* argv[])
 	BEGIN read in options and values, checking correctness and exiting if necessary
 	******************************************************************************/
 
-	char* cmdinput = nullptr;
-
 	for (int i = 1; i < argc; i += 2)
 	{
-		/******************************************************************************
-		account for possible verbose option, which is a toggle and takes no input
-		******************************************************************************/
-		if (argv[i] == std::string("-v") || argv[i] == std::string("--verbose"))
-		{
-			i--;
-			continue;
-		}
-
-		cmdinput = cmd_option_value(argv, argv + argc, std::string(argv[i]));
+		char* cmdinput = cmd_option_value(argv, argv + argc, std::string(argv[i]));
 
 		if (argv[i] == std::string("-ip") || argv[i] == std::string("--infile_prefix"))
 		{
@@ -295,8 +289,6 @@ int main(int argc, char* argv[])
 	if (!ncc.run(verbose)) return -1;
 	if (!ncc.save(verbose)) return -1;
 
-
-	std::cout << "Done.\n";
 
 	cudaDeviceReset();
 	if (cuda_error("cudaDeviceReset", false, __FILE__, __LINE__)) return -1;
