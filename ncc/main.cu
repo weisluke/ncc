@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	std::cout << "\n";
+	print_verbose("\n", verbose, 2);
 
 	/******************************************************************************
 	END read in options and values, checking correctness and exiting if necessary

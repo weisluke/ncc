@@ -190,7 +190,7 @@ private:
 	
 	bool read_caustics(int verbose)
 	{
-		std::cout << "Reading in caustics...\n";
+		print_verbose("Reading in caustics...\n", verbose, 1);
 		stopwatch.start();
 
 		std::string fname = infile_prefix + caustics_file;
@@ -214,7 +214,7 @@ private:
 		}
 
 		t_elapsed = stopwatch.stop();
-		std::cout << "Done reading in caustics. Elapsed time: " << t_elapsed << " seconds.\n\n";
+		print_verbose("Done reading in caustics. Elapsed time: " << t_elapsed << " seconds.\n\n", verbose, 1);
 
 		return true;
 	}
@@ -230,7 +230,7 @@ private:
 		num_pixels_y.re <<= over_sample;
 		num_pixels_y.im <<= over_sample;
 		set_param("num_pixels_y1", num_pixels_y.re, num_pixels_y.re, verbose);
-		set_param("num_pixels_y2", num_pixels_y.im, num_pixels_y.im, verbose);
+		set_param("num_pixels_y2", num_pixels_y.im, num_pixels_y.im, verbose, verbose < 3);
 
 		/******************************************************************************
 		allocate memory for pixels
@@ -285,12 +285,12 @@ private:
 		/******************************************************************************
 		downsample number of caustic crossings and calculate time taken in seconds
 		******************************************************************************/
-		std::cout << "Downsampling number of caustic crossings...\n";
+		print_verbose("Downsampling number of caustic crossings...\n", verbose, 1);
 		stopwatch.start();
 
 		for (int i = 0; i < over_sample; i++)
 		{
-			print_verbose("Loop " + std::to_string(i + 1) + " / " + std::to_string(over_sample) + "\n", verbose);
+			print_verbose("Loop " << i + 1 << " / " << over_sample << "\n", verbose, 2);
 			num_pixels_y.re >>= 1;
 			num_pixels_y.im >>= 1;
 
@@ -315,7 +315,7 @@ private:
 			if (cuda_error("shift_pix_kernel", true, __FILE__, __LINE__)) return false;
 		}
 		double t_reduce = stopwatch.stop();
-		std::cout << "Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n\n";
+		print_verbose("Done downsampling number of caustic crossings. Elapsed time: " << t_reduce << " seconds.\n\n", verbose, 1);
 		
 		min_num = *thrust::min_element(thrust::device, num_crossings, num_crossings + num_pixels_y.re * num_pixels_y.im);
 		if (min_num < 0)
@@ -398,7 +398,7 @@ private:
 		outfile << "t_reduce " << t_reduce << "\n";
 		outfile.close();
 		print_verbose("Done writing parameter info to file " << fname << "\n", verbose, 1);
-		print_verbose("\n", verbose, 2);
+		print_verbose("\n", verbose * (write_histograms || write_maps), 2);
 
 
 		/******************************************************************************
@@ -414,7 +414,7 @@ private:
 				return false;
 			}
 			print_verbose("Done writing number of caustic crossings histogram to file " << fname << "\n", verbose, 1);
-			print_verbose("\n", verbose, 1);
+			print_verbose("\n", verbose * write_maps, 2);
 		}
 
 
