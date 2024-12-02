@@ -335,7 +335,7 @@ private:
 
 		if (write_histograms)
 		{
-			std::cout << "Creating histograms...\n";
+			print_verbose("Creating histograms...\n", verbose, 2);
 			stopwatch.start();
 
 			min_num = *thrust::min_element(thrust::device, num_crossings, num_crossings + num_pixels_y.re * num_pixels_y.im);
@@ -359,7 +359,7 @@ private:
 			if (cuda_error("histogram_kernel", true, __FILE__, __LINE__)) return false;
 
 			t_elapsed = stopwatch.stop();
-			std::cout << "Done creating histograms. Elapsed time: " << t_elapsed << " seconds.\n\n";
+			print_verbose("Done creating histograms. Elapsed time: " << t_elapsed << " seconds.\n\n", verbose, 2);
 		}
 
 		/******************************************************************************
@@ -379,7 +379,7 @@ private:
 		outfile.precision(9);
 		std::string fname;
 
-		std::cout << "Writing parameter info...\n";
+		print_verbose("Writing parameter info...\n", verbose, 2);
 		fname = outfile_prefix + "ncc_parameter_info.txt";
 		outfile.open(fname);
 		if (!outfile.is_open())
@@ -397,7 +397,8 @@ private:
 		outfile << "t_ncc " << t_ncc << "\n";
 		outfile << "t_reduce " << t_reduce << "\n";
 		outfile.close();
-		std::cout << "Done writing parameter info to file " << fname << "\n\n";
+		print_verbose("Done writing parameter info to file " << fname << "\n", verbose, 1);
+		print_verbose("\n", verbose, 2);
 
 
 		/******************************************************************************
@@ -405,14 +406,15 @@ private:
 		******************************************************************************/
 		if (write_histograms)
 		{
-			std::cout << "Writing number of caustic crossings histogram...\n";
+			print_verbose("Writing number of caustic crossings histogram...\n", verbose, 2);
 			fname = outfile_prefix + "ncc_ncc_numpixels.txt";
 			if (!write_histogram<int>(histogram, histogram_length, min_num, fname))
 			{
 				std::cerr << "Error. Unable to write caustic crossings histogram to file " << fname << "\n";
 				return false;
 			}
-			std::cout << "Done writing number of caustic crossings histogram to file " << fname << "\n\n";
+			print_verbose("Done writing number of caustic crossings histogram to file " << fname << "\n", verbose, 1);
+			print_verbose("\n", verbose, 1);
 		}
 
 
@@ -421,14 +423,14 @@ private:
 		******************************************************************************/
 		if (write_maps)
 		{
-			std::cout << "Writing number of caustic crossings...\n";
+			print_verbose("Writing number of caustic crossings...\n", verbose, 2);
 			fname = outfile_prefix + "ncc_ncc" + outfile_type;
 			if (!write_array<int>(num_crossings, num_pixels_y.im, num_pixels_y.re, fname))
 			{
 				std::cerr << "Error. Unable to write number of caustic crossings to file " << fname << "\n";
 				return false;
 			}
-			std::cout << "Done writing number of caustic crossings to file " << fname << "\n\n";
+			print_verbose("Done writing number of caustic crossings to file " << fname << "\n", verbose, 1);
 		}
 
 		return true;
