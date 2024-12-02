@@ -160,10 +160,12 @@ calculate the number of caustic crossings
 \param hly -- half length of the source plane receiving region
 \param num -- array of number of caustic crossings
 \param npixels -- number of pixels per side for the square region
+\int percentage -- pointer to percentage complete
+\param verbose -- verbose level
 ******************************************************************************/
 template <typename T>
 __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrows, int ncols, Complex<T> center_y, Complex<T> hly, 
-	int* num, Complex<int> npixels, unsigned long long int* percentage)
+	int* num, Complex<int> npixels, unsigned long long int* percentage, int verbose)
 {
 	int x_index = blockIdx.x * blockDim.x + threadIdx.x;
 	int x_stride = blockDim.x * gridDim.x;
@@ -221,7 +223,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 					imax *= (((ncols - 1) - 1) / blockDim.y + 1);
 					if (p * 100 / imax > (p - 1) * 100 / imax)
 					{
-						device_print_progress(p, imax);
+						device_print_progress(verbose, p, imax);
 					}
 				}
 				continue;
@@ -333,7 +335,7 @@ __global__ void find_num_caustic_crossings_kernel(Complex<T>* caustics, int nrow
 				imax *= (((ncols - 1) - 1) / blockDim.y + 1);
 				if (p * 100 / imax > (p - 1) * 100 / imax)
 				{
-					device_print_progress(p, imax);
+					device_print_progress(verbose, p, imax);
 				}
 			}
 		}
